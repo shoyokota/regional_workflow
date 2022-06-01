@@ -123,10 +123,11 @@ rocoto_xml_bn=$( basename "${WFLOW_XML_FN}" ".xml" )
 rocoto_database_fn="${rocoto_xml_bn}.db"
 launch_log_fn="log.launch_${rocoto_xml_bn}"
 
-logs=`echo ${LOGDIR} | rev | cut -f 3- -d / | rev`
-latest=$(ls -td $logs/*/* | head -n 1)
+#logs=`echo ${LOGDIR} | rev | cut -f 3- -d / | rev`
+#latest=$(ls -td $logs/*/* | head -n 1)
 
-wflow_launch_log_fp=${latest}/${WFLOW_LAUNCH_LOG_FN}
+#wflow_launch_log_fp=${latest}/${WFLOW_LAUNCH_LOG_FN}
+wflow_launch_log_fp=${exptdir}/${WFLOW_LAUNCH_LOG_FN}
 
 #
 #-----------------------------------------------------------------------
@@ -323,7 +324,7 @@ done <<< "${rocotostat_output}"
 num_cycles_total=${#cycle_str[@]}
 num_cycles_completed=0
 for (( i=0; i<=$((num_cycles_total-1)); i++ )); do
-  if [ "${cycle_status}" = "Done" ]; then
+  if [ "${cycle_status[$i]}" = "Done" ]; then
     num_cycles_completed=$((num_cycles_completed+1))
   fi
 done

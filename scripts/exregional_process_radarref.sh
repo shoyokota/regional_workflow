@@ -228,7 +228,7 @@ case $MACHINE in
 
   obs_appendix=grib2.gz
   ;;
-"JET" | "HERA")
+"JET" | "HERA" | "ORION")
 
   obs_appendix=grib2
 esac

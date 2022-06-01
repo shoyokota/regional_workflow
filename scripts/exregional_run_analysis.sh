@@ -245,7 +245,7 @@ case $MACHINE in
   fi
 
   ;;
-"JET" | "HERA")
+"JET" | "HERA" | "ORION")
 
   for loop in $loops; do
     for timelist in $(ls ${ENKF_FCST}/*.gdas.t*z.atmf${loop}.mem080.${ftype}); do
@@ -390,8 +390,8 @@ else
     ;;
   "ORION" )
      obs_source=rap
-     #obsfileprefix=${YYYYMMDDHH}.${obs_source}               # rap observation from JET.
-     obsfileprefix=${obs_source}.${YYYYMMDD}/${obs_source}    # observation from operation.
+     obsfileprefix=${YYYYMMDDHH}.${obs_source}               # rap observation from JET.
+     #obsfileprefix=${obs_source}.${YYYYMMDD}/${obs_source}    # observation from operation.
      obspath_tmp=${OBSPATH}
     ;;
   *)
