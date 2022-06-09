@@ -1,5 +1,4 @@
 #!/bin/bash
-
 #
 #-----------------------------------------------------------------------
 #
@@ -9,7 +8,7 @@
 #
 . ${GLOBAL_VAR_DEFNS_FP}
 . $USHDIR/source_util_funcs.sh
-. $USHDIR/set_FV3nml_stoch_params.sh
+. $USHDIR/set_FV3nml_ens_stoch_seeds.sh
 #
 #-----------------------------------------------------------------------
 #
@@ -451,6 +450,9 @@ for (( i=0; i<${num_symlinks}; i++ )); do
   fi
 
 done
+
+ln_vrfy -sf ${relative_or_null} ${FIXam}/optics_??.dat ${run_dir}
+ln_vrfy -sf ${relative_or_null} ${FIXam}/aeroclim.m??.nc ${run_dir}
 #
 #-----------------------------------------------------------------------
 #
@@ -498,9 +500,10 @@ else
   fi
 fi
 
-if [ "${DO_ENSEMBLE}" = TRUE ]; then
+if [ "${DO_ENSEMBLE}" = TRUE ] && ([ "${DO_SPP}" = TRUE ] || [ "${DO_SPPT}" = TRUE ] || [ "${DO_SHUM}" = TRUE ] \
+   [ "${DO_SKEB}" = TRUE ] || [ "${DO_LSM_SPP}" =  TRUE ]); then
   cp ${run_dir}/input.nml ${run_dir}/input.nml_base
-  set_FV3nml_stoch_params cdate="$cdate" || print_err_msg_exit "\
+  set_FV3nml_ens_stoch_seeds cdate="$cdate" || print_err_msg_exit "\
  Call to function to create the ensemble-based namelist for the current 
  cycle's (cdate) run directory (run_dir) failed: 
    cdate = \"${cdate}\"

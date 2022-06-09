@@ -274,7 +274,6 @@ else
   n_iolayouty=$(($IO_LAYOUT_Y))
 fi
 
-
 cat << EOF > gsiparm.anl
 
  &SETUP
@@ -298,7 +297,8 @@ cat << EOF > gsiparm.anl
    i_conserve_thetaV_iternum=3,
    l_cld_bld=.true.,
    l_numconc=.true.,
-   cld_bld_hgt=1200.0,
+   cld_bld_hgt=${cld_bld_hgt},
+   l_precip_clear_only=${l_precip_clear_only},
    build_cloud_frac_p=0.50,
    clear_cloud_frac_p=0.10,
    iclean_hydro_withRef_allcol=1,
@@ -343,6 +343,12 @@ fi
 $APRUN ./${exect} > stdout 2>&1 || print_err_msg_exit "\
 Call to executable to run No Var Cloud Analysis returned with nonzero exit code."
 
+#
+#-----------------------------------------------------------------------
+#
+# touch nonvarcldanl_complete.txt to indicate competion of this task
+#
+touch nonvarcldanl_complete.txt
 #
 #-----------------------------------------------------------------------
 #

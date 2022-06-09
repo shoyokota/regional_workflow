@@ -48,14 +48,14 @@ specified cycle.
 #
 #-----------------------------------------------------------------------
 #
-# Specify the set of valid argument names for this script/function.  
+# Specify the set of valid argument names for this script/function.
 # Then process the arguments provided to this script/function (which 
 # should consist of a set of name-value pairs of the form arg1="value1",
 # etc).
 #
 #-----------------------------------------------------------------------
 #
-valid_args=( "cycle_dir" "cycle_type" "gsi_type" "mem_type" "analworkdir" "observer_nwges_dir" "slash_ensmem_subdir" "comout" "satbias_dir" )
+valid_args=( "cycle_dir" "cycle_type" "gsi_type" "mem_type" "analworkdir" "observer_nwges_dir" "slash_ensmem_subdir" "comout" "rrfse_fg_root" "satbias_dir" )
 process_args valid_args "$@"
 #
 #-----------------------------------------------------------------------
@@ -155,10 +155,10 @@ DD=${YYYYMMDDHH:6:2}
 HH=${YYYYMMDDHH:8:2}
 YYYYMMDD=${YYYYMMDDHH:0:8}
 #
-# YYYY-MM-DD_meso_uselist.txt and YYYYMMDD_rejects.txt: 
+# YYYY-MM-DD_meso_uselist.txt and YYYYMMDD_rejects.txt:
 # both contain past 7 day OmB averages till ~YYYYMMDD_23:59:59 UTC
 # So they are to be used by next day cycles
-MESO_USELIST_FN=$(date +%Y-%m-%d -d "${START_DATE} -1 day")_meso_uselist.txt 
+MESO_USELIST_FN=$(date +%Y-%m-%d -d "${START_DATE} -1 day")_meso_uselist.txt
 AIR_REJECT_FN=$(date +%Y%m%d -d "${START_DATE} -1 day")_rejects.txt
 #
 #-----------------------------------------------------------------------
@@ -191,94 +191,133 @@ else
   BKTYPE=1              # cold start
 fi
 
+#---------------------------------------------------------------------
+#
+# decide regional_ensemble_option: global ensemble (1) or FV3LAM ensemble (5)
+#
+#---------------------------------------------------------------------
+#
+echo "regional_ensemble_option is ",${regional_ensemble_option:-1}
+
 print_info_msg "$VERBOSE" "FIX_GSI is $FIX_GSI"
 print_info_msg "$VERBOSE" "fixgriddir is $fixgriddir"
 print_info_msg "$VERBOSE" "default bkpath is $bkpath"
 print_info_msg "$VERBOSE" "background type is is $BKTYPE"
 
-
-#-----------------------------------------------------------------------
 #
-# Make a list of the latest GFS EnKF ensemble
+# Check if we have enough FV3-LAM ensembles when regional_ensemble_option=5
 #
-#-----------------------------------------------------------------------
+if  [[ ${regional_ensemble_option:-1} -eq 5 ]]; then
+  ens_nstarthr=$( printf "%02d" ${DA_CYCLE_INTERV} )
+  imem=1
+  ifound=0
+  while [[ $imem -le ${NUM_ENS_MEMBERS} ]];do
+    memcharv0=$( printf "%03d" $imem )
+    memchar=mem$( printf "%04d" $imem )
 
-stampcycle=$(date -d "${START_DATE}" +%s)
-minHourDiff=100
-loops="009"    # or 009s for GFSv15
-ftype="nc"  # or nemsio for GFSv15
-foundens="false"
-cat "no ens found" >> filelist03
+    YYYYMMDDHHmInterv=$( date +%Y%m%d%H -d "${START_DATE} ${DA_CYCLE_INTERV} hours ago" )
+    restart_prefix="${YYYYMMDD}.${HH}0000."
+    slash_ensmem_subdir=$memchar
+    bkpathmem=${rrfse_fg_root}/${YYYYMMDDHHmInterv}/${slash_ensmem_subdir}/fcst_fv3lam/RESTART
 
-case $MACHINE in
-
-"WCOSS_C" | "WCOSS" | "WCOSS_DELL_P3")
-
-  for loop in $loops; do
-    for timelist in $(ls ${ENKF_FCST}/enkfgdas.*/*/atmos/mem080/gdas*.atmf${loop}.${ftype}); do
-      availtimeyyyymmdd=$(echo ${timelist} | cut -d'/' -f9 | cut -c 10-17)
-      availtimehh=$(echo ${timelist} | cut -d'/' -f10)
-      availtime=${availtimeyyyymmdd}${availtimehh}
-      avail_time=$(echo "${availtime}" | sed 's/\([[:digit:]]\{2\}\)$/ \1/')
-      avail_time=$(date -d "${avail_time}")
-
-      stamp_avail=$(date -d "${avail_time} ${loop} hours" +%s)
-
-      hourDiff=$(echo "($stampcycle - $stamp_avail) / (60 * 60 )" | bc);
-      if [[ ${stampcycle} -lt ${stamp_avail} ]]; then
-         hourDiff=$(echo "($stamp_avail - $stampcycle) / (60 * 60 )" | bc);
-      fi
-
-      if [[ ${hourDiff} -lt ${minHourDiff} ]]; then
-         minHourDiff=${hourDiff}
-         enkfcstname=gdas.t${availtimehh}z.atmf${loop}
-         eyyyymmdd=$(echo ${availtime} | cut -c1-8)
-         ehh=$(echo ${availtime} | cut -c9-10)
-         foundens="true"
-      fi
-    done
+    dynvarfile=${bkpathmem}/${restart_prefix}fv_core.res.tile1.nc
+    tracerfile=${bkpathmem}/${restart_prefix}fv_tracer.res.tile1.nc
+    if [ -r "${dynvarfile}" ] && [ -r "${tracerfile}" ] ; then
+      ln_vrfy -snf ${bkpathmem}/${restart_prefix}fv_core.res.tile1.nc       fv3SAR${ens_nstarthr}_ens_mem${memcharv0}-fv3_dynvars 
+      ln_vrfy -snf ${bkpathmem}/${restart_prefix}fv_tracer.res.tile1.nc     fv3SAR${ens_nstarthr}_ens_mem${memcharv0}-fv3_tracer 
+      (( ifound += 1 ))
+    else
+      print_info_msg "Error: cannot find ensemble files: ${dynvarfile} ${tracerfile} "
+    fi
+    (( imem += 1 ))
   done
-
-  if [ ${foundens} = "true" ]
-  then
-    ls ${ENKF_FCST}/enkfgdas.${eyyyymmdd}/${ehh}/atmos/mem???/${enkfcstname}.nc > filelist03
+  if [[ $ifound -ne ${NUM_ENS_MEMBERS} ]]; then
+    print_info_msg "Not enough FV3_LAM ensembles, will fall to GDAS"
+    regional_ensemble_option=1
   fi
+fi
+#
+if  [[ ${regional_ensemble_option:-1} -eq 1 ]]; then #using GDAS
+  #-----------------------------------------------------------------------
+  # Make a list of the latest GFS EnKF ensemble
+  #-----------------------------------------------------------------------
+  stampcycle=$(date -d "${START_DATE}" +%s)
+  minHourDiff=100
+  loops="009"    # or 009s for GFSv15
+  ftype="nc"  # or nemsio for GFSv15
+  foundgdasens="false"
+  cat "no ens found" >> filelist03
 
-  ;;
-"JET" | "HERA" | "ORION")
+  case $MACHINE in
 
-  for loop in $loops; do
-    for timelist in $(ls ${ENKF_FCST}/*.gdas.t*z.atmf${loop}.mem080.${ftype}); do
-      availtimeyy=$(basename ${timelist} | cut -c 1-2)
-      availtimeyyyy=20${availtimeyy}
-      availtimejjj=$(basename ${timelist} | cut -c 3-5)
-      availtimemm=$(date -d "${availtimeyyyy}0101 +$(( 10#${availtimejjj} - 1 )) days" +%m)
-      availtimedd=$(date -d "${availtimeyyyy}0101 +$(( 10#${availtimejjj} - 1 )) days" +%d)
-      availtimehh=$(basename ${timelist} | cut -c 6-7)
-      availtime=${availtimeyyyy}${availtimemm}${availtimedd}${availtimehh}
-      avail_time=$(echo "${availtime}" | sed 's/\([[:digit:]]\{2\}\)$/ \1/')
-      avail_time=$(date -d "${avail_time}")
+  "WCOSS_C" | "WCOSS" | "WCOSS_DELL_P3")
 
-      stamp_avail=$(date -d "${avail_time} ${loop} hours" +%s)
+    for loop in $loops; do
+      for timelist in $(ls ${ENKF_FCST}/enkfgdas.*/*/atmos/mem080/gdas*.atmf${loop}.${ftype}); do
+        availtimeyyyymmdd=$(echo ${timelist} | cut -d'/' -f9 | cut -c 10-17)
+        availtimehh=$(echo ${timelist} | cut -d'/' -f10)
+        availtime=${availtimeyyyymmdd}${availtimehh}
+        avail_time=$(echo "${availtime}" | sed 's/\([[:digit:]]\{2\}\)$/ \1/')
+        avail_time=$(date -d "${avail_time}")
 
-      hourDiff=$(echo "($stampcycle - $stamp_avail) / (60 * 60 )" | bc);
-      if [[ ${stampcycle} -lt ${stamp_avail} ]]; then
-         hourDiff=$(echo "($stamp_avail - $stampcycle) / (60 * 60 )" | bc);
-      fi
+        stamp_avail=$(date -d "${avail_time} ${loop} hours" +%s)
 
-      if [[ ${hourDiff} -lt ${minHourDiff} ]]; then
-         minHourDiff=${hourDiff}
-         enkfcstname=${availtimeyy}${availtimejjj}${availtimehh}00.gdas.t${availtimehh}z.atmf${loop}
-         foundens="true"
-      fi
+        hourDiff=$(echo "($stampcycle - $stamp_avail) / (60 * 60 )" | bc);
+        if [[ ${stampcycle} -lt ${stamp_avail} ]]; then
+           hourDiff=$(echo "($stamp_avail - $stampcycle) / (60 * 60 )" | bc);
+        fi
+
+        if [[ ${hourDiff} -lt ${minHourDiff} ]]; then
+           minHourDiff=${hourDiff}
+           enkfcstname=gdas.t${availtimehh}z.atmf${loop}
+           eyyyymmdd=$(echo ${availtime} | cut -c1-8)
+           ehh=$(echo ${availtime} | cut -c9-10)
+           foundgdasens="true"
+        fi
+      done
     done
-  done
 
-  if [ $foundens = "true" ]; then
-    ls ${ENKF_FCST}/${enkfcstname}.mem0??.${ftype} >> filelist03
-  fi
+    if [ ${foundgdasens} = "true" ]
+    then
+      ls ${ENKF_FCST}/enkfgdas.${eyyyymmdd}/${ehh}/atmos/mem???/${enkfcstname}.nc > filelist03
+    fi
 
-esac
+    ;;
+  "JET" | "HERA" | "ORION")
+
+    for loop in $loops; do
+      for timelist in $(ls ${ENKF_FCST}/*.gdas.t*z.atmf${loop}.mem080.${ftype}); do
+        availtimeyy=$(basename ${timelist} | cut -c 1-2)
+        availtimeyyyy=20${availtimeyy}
+        availtimejjj=$(basename ${timelist} | cut -c 3-5)
+        availtimemm=$(date -d "${availtimeyyyy}0101 +$(( 10#${availtimejjj} - 1 )) days" +%m)
+        availtimedd=$(date -d "${availtimeyyyy}0101 +$(( 10#${availtimejjj} - 1 )) days" +%d)
+        availtimehh=$(basename ${timelist} | cut -c 6-7)
+        availtime=${availtimeyyyy}${availtimemm}${availtimedd}${availtimehh}
+        avail_time=$(echo "${availtime}" | sed 's/\([[:digit:]]\{2\}\)$/ \1/')
+        avail_time=$(date -d "${avail_time}")
+
+        stamp_avail=$(date -d "${avail_time} ${loop} hours" +%s)
+
+        hourDiff=$(echo "($stampcycle - $stamp_avail) / (60 * 60 )" | bc);
+        if [[ ${stampcycle} -lt ${stamp_avail} ]]; then
+           hourDiff=$(echo "($stamp_avail - $stampcycle) / (60 * 60 )" | bc);
+        fi
+
+        if [[ ${hourDiff} -lt ${minHourDiff} ]]; then
+           minHourDiff=${hourDiff}
+           enkfcstname=${availtimeyy}${availtimejjj}${availtimehh}00.gdas.t${availtimehh}z.atmf${loop}
+           foundgdasens="true"
+        fi
+      done
+    done
+
+    if [ $foundgdasens = "true" ]; then
+      ls ${ENKF_FCST}/${enkfcstname}.mem0??.${ftype} >> filelist03
+    fi
+
+  esac
+fi
 
 #
 #-----------------------------------------------------------------------
@@ -296,15 +335,23 @@ lread_obs_skip=.false.
 
 # Determine if hybrid option is available
 memname='atmf009'
-nummem=$(more filelist03 | wc -l)
-nummem=$((nummem - 3 ))
-if [[ ${nummem} -ge ${HYBENSMEM_NMIN} ]]; then
-  print_info_msg "$VERBOSE" "Do hybrid with ${memname}"
+
+if [ ${regional_ensemble_option:-1} -eq 5 ]  && [ ${BKTYPE} != 1  ]; then 
+  nummem=$NUM_ENS_MEMBERS
+  print_info_msg "$VERBOSE" "Do hybrid with FV3LAM ensemble"
   ifhyb=.true.
-  print_info_msg "$VERBOSE" " Cycle ${YYYYMMDDHH}: GSI hybrid uses ${memname} with n_ens=${nummem}" 
-else
-  print_info_msg "$VERBOSE" " Cycle ${YYYYMMDDHH}: GSI does pure 3DVAR."
-  print_info_msg "$VERBOSE" " Hybrid needs at least ${HYBENSMEM_NMIN} ${memname} ensembles, only ${nummem} available"
+  print_info_msg "$VERBOSE" " Cycle ${YYYYMMDDHH}: GSI hybrid uses FV3LAM ensemble with n_ens=${nummem}" 
+else    
+  nummem=$(more filelist03 | wc -l)
+  nummem=$((nummem - 3 ))
+  if [[ ${nummem} -ge ${HYBENSMEM_NMIN} ]]; then
+    print_info_msg "$VERBOSE" "Do hybrid with ${memname}"
+    ifhyb=.true.
+    print_info_msg "$VERBOSE" " Cycle ${YYYYMMDDHH}: GSI hybrid uses ${memname} with n_ens=${nummem}"
+  else
+    print_info_msg "$VERBOSE" " Cycle ${YYYYMMDDHH}: GSI does pure 3DVAR."
+    print_info_msg "$VERBOSE" " Hybrid needs at least ${HYBENSMEM_NMIN} ${memname} ensembles, only ${nummem} available"
+  fi
 fi
 
 #
@@ -312,7 +359,7 @@ fi
 #
 # link or copy background and grib configuration files
 #
-#  Using ncks to add phis (terrain) into cold start input background. 
+#  Using ncks to add phis (terrain) into cold start input background.
 #           it is better to change GSI to use the terrain from fix file.
 #  Adding radar_tten array to fv3_tracer. Should remove this after add this array in
 #           radar_tten converting code.
@@ -655,17 +702,17 @@ if [ ${DO_RADDA} == "TRUE" ]; then
 
   ## if satbias files (go back to previous 10 dyas) are not available from ${satbias_dir}, use satbias files from the ${FIX_GSI} 
   if [ $satcounter -eq $maxcounter ]; then
-    if [ -r ${FIX_GSI}/rrfs.starting_satbias ]; then
-      echo "using satllite satbias_in files from ${FIX_GSI}"     
-      cp_vrfy ${FIX_GSI}/rrfs.starting_satbias ./satbias_in
+    if [ -r ${FIX_GSI}/rrfs.gdas_satbias ]; then
+      echo "using satllite gdas satbias_in files from ${FIX_GSI}"     
+      cp_vrfy ${FIX_GSI}/rrfs.gdas_satbias ./satbias_in
     fi
-    if [ -r ${FIX_GSI}/rrfs.starting_satbias_pc ]; then
-      echo "using satllite satbias_pc files from ${FIX_GSI}"     
-      cp_vrfy ${FIX_GSI}/rrfs.starting_satbias_pc ./satbias_pc
+    if [ -r ${FIX_GSI}/rrfs.gdas_satbias_pc ]; then
+      echo "using satllite gdas satbias_pc files from ${FIX_GSI}"     
+      cp_vrfy ${FIX_GSI}/rrfs.gdas_satbias_pc ./satbias_pc
     fi
-    if [ -r ${FIX_GSI}/rrfs.starting_radstat ]; then
-      echo "using satllite radstat files from ${FIX_GSI}"     
-      cp_vrfy ${FIX_GSI}/rrfs.starting_radstat ./radstat.rrfs
+    if [ -r ${FIX_GSI}/rrfs.gdas_radstat ]; then
+      echo "using netcdf satllite radstat files from ${FIX_GSI}"     
+      cp_vrfy ${FIX_GSI}/rrfs.gdas_radstat ./radstat.rrfs
     fi
   fi
 
@@ -676,7 +723,7 @@ if [ ${DO_RADDA} == "TRUE" ]; then
     date=`echo $diag_file | cut -d'.' -f2`
     gunzip $diag_file
     fnameanl=$(echo $fname|sed 's/_ges//g')
-    mv $fname.$date $fnameanl
+    mv $fname.$date* $fnameanl
   done
 fi
 
@@ -753,6 +800,15 @@ Call to executable to run GSI returned with nonzero exit code."
 #
 #-----------------------------------------------------------------------
 #
+# touch a file "gsi_complete.txt" after the successful GSI run. This is to inform
+# the successful analysis for the EnKF recentering
+#
+#-----------------------------------------------------------------------
+#
+touch gsi_complete.txt
+#
+#-----------------------------------------------------------------------
+#
 # Copy analysis results to INPUT for model forecast.
 #
 #-----------------------------------------------------------------------
@@ -793,36 +849,57 @@ case $loop in
 esac
 
 #  Collect diagnostic files for obs types (groups) below
+numfile_rad_bin=0
+numfile_cnv=0
+numfile_rad=0
 if [ $binary_diag = ".true." ]; then
    listall="hirs2_n14 msu_n14 sndr_g08 sndr_g11 sndr_g11 sndr_g12 sndr_g13 sndr_g08_prep sndr_g11_prep sndr_g12_prep sndr_g13_prep sndrd1_g11 sndrd2_g11 sndrd3_g11 sndrd4_g11 sndrd1_g15 sndrd2_g15 sndrd3_g15 sndrd4_g15 sndrd1_g13 sndrd2_g13 sndrd3_g13 sndrd4_g13 hirs3_n15 hirs3_n16 hirs3_n17 amsua_n15 amsua_n16 amsua_n17 amsua_n18 amsua_n19 amsua_metop-a amsua_metop-b amsua_metop-c amsub_n15 amsub_n16 amsub_n17 hsb_aqua airs_aqua amsua_aqua imgr_g08 imgr_g11 imgr_g12 pcp_ssmi_dmsp pcp_tmi_trmm conv sbuv2_n16 sbuv2_n17 sbuv2_n18 omi_aura ssmi_f13 ssmi_f14 ssmi_f15 hirs4_n18 hirs4_metop-a mhs_n18 mhs_n19 mhs_metop-a mhs_metop-b mhs_metop-c amsre_low_aqua amsre_mid_aqua amsre_hig_aqua ssmis_las_f16 ssmis_uas_f16 ssmis_img_f16 ssmis_env_f16 iasi_metop-a iasi_metop-b iasi_metop-c seviri_m08 seviri_m09 seviri_m10 seviri_m11 cris_npp atms_npp ssmis_f17 cris-fsr_npp cris-fsr_n20 atms_n20 abi_g16 abi_g17"
    for type in $listall; do
       count=$(ls pe*.${type}_${loop} | wc -l)
       if [[ $count -gt 0 ]]; then
          $(cat pe*.${type}_${loop} > diag_${type}_${string}.${YYYYMMDDHH})
+         echo "diag_${type}_${string}.${YYYYMMDDHH}" >> listrad_bin
+         numfile_rad_bin=`expr ${numfile_rad_bin} + 1`
       fi
    done
 fi
 
 if [ $netcdf_diag = ".true." ]; then
-   listallnc="conv_ps conv_q conv_t conv_uv"
+   listall_cnv="conv_ps conv_q conv_t conv_uv conv_pw conv_rw conv_sst"
+   listall_rad="hirs2_n14 msu_n14 sndr_g08 sndr_g11 sndr_g11 sndr_g12 sndr_g13 sndr_g08_prep sndr_g11_prep sndr_g12_prep sndr_g13_prep sndrd1_g11 sndrd2_g11 sndrd3_g11 sndrd4_g11 sndrd1_g15 sndrd2_g15 sndrd3_g15 sndrd4_g15 sndrd1_g13 sndrd2_g13 sndrd3_g13 sndrd4_g13 hirs3_n15 hirs3_n16 hirs3_n17 amsua_n15 amsua_n16 amsua_n17 amsua_n18 amsua_n19 amsua_metop-a amsua_metop-b amsua_metop-c amsub_n15 amsub_n16 amsub_n17 hsb_aqua airs_aqua amsua_aqua imgr_g08 imgr_g11 imgr_g12 pcp_ssmi_dmsp pcp_tmi_trmm conv sbuv2_n16 sbuv2_n17 sbuv2_n18 omi_aura ssmi_f13 ssmi_f14 ssmi_f15 hirs4_n18 hirs4_metop-a mhs_n18 mhs_n19 mhs_metop-a mhs_metop-b mhs_metop-c amsre_low_aqua amsre_mid_aqua amsre_hig_aqua ssmis_las_f16 ssmis_uas_f16 ssmis_img_f16 ssmis_env_f16 iasi_metop-a iasi_metop-b iasi_metop-c seviri_m08 seviri_m09 seviri_m10 seviri_m11 cris_npp atms_npp ssmis_f17 cris-fsr_npp cris-fsr_n20 atms_n20 abi_g16"
 
-   cat_exec="${EXECDIR}/ncdiag_cat.x"
+   cat_exec="${EXECDIR}/nc_diag_cat.x"
 
    if [ -f $cat_exec ]; then
       print_info_msg "$VERBOSE" "
-        Copying the ncdiag_cat executable to the run directory..."
-      cp_vrfy ${cat_exec} ${analworkdir}/ncdiag_cat.x
+        Copying the nc_diag_cat executable to the run directory..."
+      cp_vrfy ${cat_exec} ${analworkdir}/nc_diag_cat.x
    else
       print_err_msg_exit "\
-        The ncdiag_cat executable specified in cat_exec does not exist:
+        The nc_diag_cat executable specified in cat_exec does not exist:
         cat_exec = \"$cat_exec\"
         Build GSI and rerun."
    fi
 
-   for type in $listallnc; do
+   for type in $listall_cnv; do
       count=$(ls pe*.${type}_${loop}.nc4 | wc -l)
       if [[ $count -gt 0 ]]; then
-         ./ncdiag_cat.x -o ncdiag_${type}_${string}.nc4.${YYYYMMDDHH} pe*.${type}_${loop}.nc4
+         ${APRUN} ./nc_diag_cat.x -o diag_${type}_${string}.${YYYYMMDDHH}.nc4 pe*.${type}_${loop}.nc4
+         gzip diag_${type}_${string}.${YYYYMMDDHH}.nc4*
+         echo "diag_${type}_${string}.${YYYYMMDDHH}.nc4*" >> listcnv
+         numfile_cnv=`expr ${numfile_cnv} + 1`
+      fi
+   done
+
+   for type in $listall_rad; do
+      count=$(ls pe*.${type}_${loop}.nc4 | wc -l)
+      if [[ $count -gt 0 ]]; then
+         ${APRUN} ./nc_diag_cat.x -o diag_${type}_${string}.${YYYYMMDDHH}.nc4 pe*.${type}_${loop}.nc4
+         gzip diag_${type}_${string}.${YYYYMMDDHH}.nc4*
+         echo "diag_${type}_${string}.${YYYYMMDDHH}.nc4*" >> listrad
+         numfile_rad=`expr ${numfile_rad} + 1`
+      else
+         echo 'No diag_' ${type} 'exist'
       fi
    done
 fi
@@ -831,6 +908,13 @@ done
 
 if [ ${gsi_type} == "OBSERVER" ]; then
   cp_vrfy *diag* ${observer_nwges_dir}/.
+  if [ ${mem_type} == "MEAN" ]; then
+  mkdir_vrfy -p ${observer_nwges_dir}/../../../observer_diag/${YYYYMMDDHH}/ensmean/observer_gsi
+  cp_vrfy *diag* ${observer_nwges_dir}/../../../observer_diag/${YYYYMMDDHH}/ensmean/observer_gsi/.
+  else
+  mkdir_vrfy -p ${observer_nwges_dir}/../../../observer_diag/${YYYYMMDDHH}/${slash_ensmem_subdir}/observer_gsi
+  cp_vrfy *diag* ${observer_nwges_dir}/../../../observer_diag/${YYYYMMDDHH}/${slash_ensmem_subdir}/observer_gsi/.
+  fi
 fi
 
 #
@@ -846,10 +930,21 @@ if [ ${DO_RADDA} == "TRUE" ]; then
   else
     spinup_or_prod_rrfs=prod
   fi
-  tar -cvzf rrfs.${spinup_or_prod_rrfs}.${YYYYMMDDHH}_radstat *diag*.${YYYYMMDDHH}
+  if [ ${numfile_cnv} -gt 0 ]; then
+     tar -cvzf rrfs.${spinup_or_prod_rrfs}.${YYYYMMDDHH}_cnvstat_nc `cat listcnv`
+     cp_vrfy ./rrfs.${spinup_or_prod_rrfs}.${YYYYMMDDHH}_cnvstat_nc  ${satbias_dir}/rrfs.${spinup_or_prod_rrfs}.${YYYYMMDDHH}_cnvstat
+  fi
+  if [ ${numfile_rad} -gt 0 ]; then
+     tar -cvzf rrfs.${spinup_or_prod_rrfs}.${YYYYMMDDHH}_radstat_nc `cat listrad`
+     cp_vrfy ./rrfs.${spinup_or_prod_rrfs}.${YYYYMMDDHH}_radstat_nc  ${satbias_dir}/rrfs.${spinup_or_prod_rrfs}.${YYYYMMDDHH}_radstat
+  fi
+  if [ ${numfile_rad_bin} -gt 0 ]; then
+     tar -cvzf rrfs.${spinup_or_prod_rrfs}.${YYYYMMDDHH}_radstat `cat listrad_bin`
+     cp_vrfy ./rrfs.${spinup_or_prod_rrfs}.${YYYYMMDDHH}_radstat  ${satbias_dir}/rrfs.${spinup_or_prod_rrfs}.${YYYYMMDDHH}_radstat
+  fi
+
   cp_vrfy ./satbias_out ${satbias_dir}/rrfs.${spinup_or_prod_rrfs}.${YYYYMMDDHH}_satbias
   cp_vrfy ./satbias_pc.out ${satbias_dir}/rrfs.${spinup_or_prod_rrfs}.${YYYYMMDDHH}_satbias_pc
-  cp_vrfy ./rrfs.${spinup_or_prod_rrfs}.${YYYYMMDDHH}_radstat  ${satbias_dir}/rrfs.${spinup_or_prod_rrfs}.${YYYYMMDDHH}_radstat
 fi
 
 #
@@ -950,35 +1045,6 @@ ANALYSIS GSI completed successfully!!!
 Exiting script:  \"${scrfunc_fn}\"
 In directory:    \"${scrfunc_dir}\"
 ========================================================================"
-#
-#-----------------------------------------------------------------------
-#
-# Copy analysis results to com
-#
-#-----------------------------------------------------------------------
-#
-#
-mynet=${NET}
-if [ ${BKTYPE} -eq 1 ]; then  # cold start, put analysis back to current INPUT 
-  cp_vrfy ${analworkdir}/fv3_dynvars                  ${comout}/${mynet}.t${cyc}z.gfs_data.tile7.halo0.nc
-  cp_vrfy ${analworkdir}/fv3_sfcdata                  ${comout}/${mynet}.t${cyc}z.sfc_data.tile7.halo0.nc
-else                          # cycling
-
-  if [ "${IO_LAYOUT_Y}" == "1" ]; then
-    cp_vrfy ${analworkdir}/fv3_dynvars             ${comout}/${mynet}.t${cyc}z.fv_core.res.tile1.nc
-    cp_vrfy ${analworkdir}/fv3_tracer              ${comout}/${mynet}.t${cyc}z.fv_tracer.res.tile1.nc
-    cp_vrfy ${analworkdir}/fv3_sfcdata             ${comout}/${mynet}.t${cyc}z.sfc_data.nc
-  else
-    for ii in ${list_iolayout}
-    do
-      iii=`printf %4.4i $ii`
-      cp_vrfy ${analworkdir}/fv3_dynvars.${iii}      ${comout}/${mynet}.t${cyc}z.fv_core.res.tile1.nc.${iii}
-      cp_vrfy ${analworkdir}/fv3_tracer.${iii}       ${comout}/${mynet}.t${cyc}z.fv_tracer.res.tile1.nc.${iii}
-      cp_vrfy ${analworkdir}/fv3_sfcdata.${iii}      ${comout}/${mynet}.t${cyc}z.sfc_data.nc.${iii}
-    done
-  fi
-
-fi
 #
 #-----------------------------------------------------------------------
 #

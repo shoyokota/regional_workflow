@@ -1,6 +1,7 @@
 MACHINE="orion"
 ACCOUNT="nrtrr"
 #RESERVATION="rrfsdet"
+#RESERVATION_POST="rrfsdet"
 EXPT_BASEDIR="/work/noaa/fv3-cam/${USER}/rrfs/test"
 EXPT_SUBDIR="rrfs_a"
 
@@ -53,7 +54,7 @@ VERBOSE="TRUE"
 RUN_ENVIR="nco"
 
 PREDEF_GRID_NAME=RRFS_CONUS_3km
-ADDNL_OUTPUT_GRIDS=( )
+ADDNL_OUTPUT_GRIDS=()
 
 TILE_LABELS="CONUS REGIONS"
 TILE_SETS="full NE,NC,NW,SE,SC,SW"
@@ -68,6 +69,7 @@ RADARREFL_TIMELEVEL=(0)
 FH_DFI_RADAR="0.0,0.25,0.5"
 DO_SOIL_ADJUST="TRUE"
 DO_RADDA="FALSE"
+DO_BUFRSND="FALSE"
 
 QUILTING="TRUE"
 CCPP_PHYS_SUITE="FV3_HRRR"
@@ -123,14 +125,13 @@ NCORES_RUN_ANAL=240
 NCORES_RUN_OBSERVER=80
 HYBENSMEM_NMIN=66
 HALO_BLEND=20
-LAYOUT_X="30"
-LAYOUT_Y="20"
-IO_LAYOUT_Y=4
+IO_LAYOUT_Y=1
 PPN_RUN_REF2TTEN=1
 PPN_RUN_NONVARCLDANL=${IO_LAYOUT_Y}
 NATIVE_RUN_FCST="--cpus-per-task 1"
 
 PRINT_DIFF_PGR="TRUE"
+USE_IO_NETCDF="TRUE"
 
 if [[ -n $RESERVATION ]] ; then
   NNODES_MAKE_ICS="3"
@@ -153,8 +154,8 @@ FV3GFS_FILE_FMT_LBCS="grib2"
 
 envir="para"
 
-NET="rrfs_a"
-TAG="rrfs_a"
+NET="RRFS_CONUS"
+TAG="RRFS_CONUS_3km"
 
 USE_CUSTOM_POST_CONFIG_FILE="TRUE"
 TESTBED_FIELDS_FN="testbed_fields_bgdawp.txt"
@@ -187,7 +188,7 @@ if [[ $MACHINE == "wcoss_dell_p3" ]] ; then
   FV3GFS_FILE_FMT_LBCS="netcdf"
 fi
 
-RUN="rrfs_a"
+RUN="RRFS_conus_3km"
 COMINgfs=""
 
 . set_rrfs_config.sh
@@ -195,6 +196,11 @@ COMINgfs=""
 STMP="${EXPT_BASEDIR}/${EXPT_SUBDIR}/ptmp/stmp"  # Path to directory STMP that mostly contains input files.
 PTMP="${EXPT_BASEDIR}/${EXPT_SUBDIR}/ptmp"  # Path to directory STMP that mostly contains input files.
 NWGES="${EXPT_BASEDIR}/${EXPT_SUBDIR}/ptmp/nwges"  # Path to directory NWGES that save boundary, cold initial, restart files
+if [[ ${regional_ensemble_option} == "5" ]]; then
+  RRFSE_NWGES="YourOwnSpace/NCO_dirs/nwges"  # Path to RRFSE directory NWGES that mostly contains ensemble restart files for GSI hybrid.
+  NUM_ENS_MEMBERS=10     # FV3LAM ensemble size for GSI hybrid analysis
+fi
+
 
 if [[ ${DO_ENSEMBLE}  == "TRUE" ]]; then
    NUM_ENS_MEMBERS=9

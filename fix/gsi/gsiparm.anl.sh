@@ -6,6 +6,7 @@ gsi_namelist="
    gencode=78,factqmin=0.0,factqmax=0.0,
    iguess=-1,
    lread_obs_save=${lread_obs_save},lread_obs_skip=${lread_obs_skip},
+   ${ens_nstarthr:+"ens_nstarthr=$ens_nstarthr,"}
    oneobtest=.false.,retrieval=.false.,
    nhr_assimilation=3,l_foto=.false.,
    use_pbl=.false.,use_prepb_satwnd=$ifsatbufr,
@@ -14,7 +15,8 @@ gsi_namelist="
    diag_precon=.true.,step_start=1.e-3,
    l4densvar=.false.,nhr_obsbin=3,
    use_gfs_nemsio=.false.,use_gfs_ncio=.true.,reset_bad_radbc=.true.,
-   netcdf_diag=.false.,
+   netcdf_diag=${netcdf_diag},binary_diag=${binary_diag},
+   l_obsprvdiag=${l_obsprvdiag},
  /     
  &GRIDOPTS
    fv3_regional=.true.,grid_ratio_fv3_regional=${grid_ratio_fv3},nvege_type=20,
@@ -24,6 +26,7 @@ gsi_namelist="
    vs=${bkgerr_vs},
    hzscl=${bkgerr_hzscl},
    bw=0.,fstat=.true.,
+   usenewgfsberror=${usenewgfsberror},
 /
  &ANBKGERR
    anisotropic=.false.,

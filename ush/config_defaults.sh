@@ -114,9 +114,24 @@ RUN_ENVIR="nco"
 # "slurm".
 #
 # QUEUE_WGRIB2:
-# The queue or QOS to which the task that remaps output grids is submitted.  
+# The queue or QOS to which the task that wgrib2 is submitted.  
 # If this is not set or set to an empty string, it will be (re)set to a 
 # machine-dependent value.
+#
+# PARTITION_POST:
+# If using the slurm job scheduler (i.e. if SCHED is set to "slurm"), 
+# the partition to which the task that upp is submitted.
+#
+# QUEUE_POST:
+# The queue or QOS to which the task that upp is submitted.  
+# If this is not set or set to an empty string, it will be (re)set to a 
+# machine-dependent value.
+#
+# RESERVATION:
+# The reservation for major tasks.  
+#
+# RESERVATION_POST:
+# The reservation for post tasks.  
 #
 # mach_doc_end
 #
@@ -126,6 +141,7 @@ MACHINE="BIG_COMPUTER"
 ACCOUNT="project_name"
 SERVICE_ACCOUNT=""
 RESERVATION=""
+RESERVATION_POST=""
 SCHED=""
 PARTITION_DEFAULT=""
 QUEUE_DEFAULT=""
@@ -139,6 +155,8 @@ PARTITION_ANALYSIS=""
 QUEUE_ANALYSIS=""
 PARTITION_WGRIB2=""
 QUEUE_WGRIB2=""
+PARTITION_POST=""
+QUEUE_POST=""
 #
 #-----------------------------------------------------------------------
 #
@@ -285,12 +303,17 @@ EXPT_SUBDIR=""
 COMINgfs="/base/path/of/directory/containing/gfs/input/files"
 FIXLAM_NCO_BASEDIR=""
 STMP="/base/path/of/directory/containing/model/input/and/raw/output/files"
+ENSCTRL_STMP="/base/path/of/directory/containing/model/input/and/raw/output/files"
+RRFSE_NWGES_BASEDIR="/base/path/of/directory/containing/model/restart/files"
 NET="rrfs"
 envir="para"
 RUN="experiment_name"
 TAG="dev_grid"
 PTMP="/base/path/of/directory/containing/postprocessed/output/files"
+ENSCTRL_PTMP="/base/path/of/directory/containing/postprocessed/output/files"
 NWGES="/base/path/of/directory/containing/model/output/files"
+ENSCTRL_NWGES="/base/path/of/directory/containing/model/restart/files"
+RRFSE_NWGES="/base/path/of/directory/containing/model/output/files"
 
 ARCHIVEDIR="/5year/BMC/wrfruc/rrfs_dev1"
 NCARG_ROOT="/apps/ncl/6.5.0-CentOS6.10_64bit_nodap_gnu447"
@@ -485,6 +508,9 @@ WFLOW_LAUNCH_LOG_FN="log.launch_FV3LAM_wflow"
 # POSTPROC_LONG_LEN_HRS:
 # The length of long post process, in integer hours.
 #
+# CYCL_HRS_HYB_FV3LAM_ENS:
+# An array containing the hours of the day at which the GSI hybrid using FV3LAM ensemeble.
+#
 #-----------------------------------------------------------------------
 #
 DATE_FIRST_CYCL="YYYYMMDD"
@@ -501,6 +527,7 @@ FCST_LEN_HRS_SPINUP="1"
 FCST_LEN_HRS_CYCLES=( )
 DA_CYCLE_INTERV="3"
 RESTART_INTERVAL="3,6"
+CYCL_HRS_HYB_FV3LAM_ENS=( "99" )
 
 #-----------------------------------------------------------------------
 #
@@ -578,17 +605,21 @@ ARCHIVE_CYCLEDEF="00 01 01 01 2100 *"
 #       (need to follow FORTRAN namelist convetion)
 #-------------------------------------------------------------------------------------
 # &SETUP  and &BKGERR
+l_obsprvdiag=.false.
 diag_radardbz=.true.
 write_diag_2=.false.
 bkgerr_vs=1.0
-bkgerr_hzscl=0.373,0.746,1.5   #no trailing ,
+bkgerr_hzscl=0.7,1.4,2.80   #no trailing ,
+usenewgfsberror=.true.
+netcdf_diag=.false.
+binary_diag=.true.
 
 # &HYBRID_ENSEMBLE
 readin_localization=.true.     #if true, it overwrites the "beta1_inv/ens_h/ens_v" setting
 beta1_inv=0.15                 #beata_inv is 1-ensemble_wgt
 ens_h=110
 ens_v=3
-regional_ensemble_option=1     #1 for GDAS
+regional_ensemble_option=1     #1 for GDAS ; 5 for FV3LAM ensemble
 grid_ratio_fv3=2.0             #fv3 resolution 3km, so analysis=3*2=6km
 grid_ratio_ens=3               #if analysis is 3km, then ensemble=3*3=9km. GDAS ensemble is 20km
 i_en_perts_io=1                #0 or 1: original file   3: pre-processed ensembles
@@ -611,6 +642,11 @@ OBERROR_FN="errtable.rrfs"
 HYBENSINFO_FN="hybens_info.rrfs"
 AIRCRAFT_REJECT=""
 SFCOBS_USELIST=""
+#
+#-----------------------------------------------------------------------
+# default namelist for nonvar cloud analysis
+cld_bld_hgt=1200.0
+l_precip_clear_only=.false.
 #
 #-----------------------------------------------------------------------
 #
@@ -1090,6 +1126,14 @@ ESGgrid_WIDE_HALO_WIDTH=""
 #    the parameters defined in this section are set to non-empty strings
 #    before creating the experiment directory.
 #
+# USE_IO_NETCDF
+#   use parallel netcdf io for restart files
+#
+# NSOUT
+#   setup frequency of writing out forecast files in time steps
+# NSOUT_MIN
+#   setup frequency of writing out forecast files in minutes
+#
 #-----------------------------------------------------------------------
 #
 DT_ATMOS=""
@@ -1099,6 +1143,9 @@ IO_LAYOUT_X="1"
 IO_LAYOUT_Y="1"
 BLOCKSIZE=""
 FH_DFI_RADAR="-20000000000"
+USE_IO_NETCDF="FALSE"
+NSOUT="0"
+NSOUT_MIN="0"
 #
 #-----------------------------------------------------------------------
 #
@@ -1291,6 +1338,8 @@ OROG_DIR="/path/to/pregenerated/orog/files"
 
 RUN_TASK_MAKE_SFC_CLIMO="TRUE"
 SFC_CLIMO_DIR="/path/to/pregenerated/surface/climo/files"
+
+
 #
 NCORES_PER_NODE=24 #Jet default value
 IS_RTMA="FALSE"
@@ -1509,6 +1558,7 @@ MAKE_LBCS_TN="make_lbcs"
 RUN_FCST_TN="run_fcst"
 RUN_POST_TN="run_post"
 RUN_WGRIB2_TN="run_wgrib2"
+RUN_BUFRSND_TN="run_bufrsnd"
 
 ANAL_GSI_TN="anal_gsi_input"
 OBSERVER_GSI_ENSMEAN_TN="observer_gsi_ensmean"
@@ -1520,9 +1570,11 @@ PREP_CYC_ENSMEAN_TN="prep_cyc_ensmean"
 PREP_CYC_TN="prep_cyc"
 PROCESS_RADAR_REF_TN="process_radarref"
 PROCESS_LIGHTNING_TN="process_lightning"
+RADAR_REF_THINNING="1"
 PROCESS_BUFR_TN="process_bufr"
 RADAR_REFL2TTEN_TN="radar_refl2tten"
 CLDANL_NONVAR_TN="cldanl_nonvar"
+SAVE_RESTART_TN="save_restart"
 #
 # Number of nodes.
 #
@@ -1538,13 +1590,16 @@ NNODES_RUN_FCST=""  # This is calculated in the workflow generation scripts, so 
 NNODES_RUN_POST="2"
 NNODES_RUN_WGRIB2="1"
 NNODES_RUN_ANAL="16"
-NNODES_RUN_ENKF="40"
+NNODES_RUN_ENKF="90"
+NNODES_RUN_RECENTER="2"
 NNODES_PROC_RADAR="2"
 NNODES_PROC_LIGHTNING="1"
 NNODES_PROC_BUFR="1"
 NNODES_RUN_REF2TTEN="1"
 NNODES_RUN_NONVARCLDANL="1"
 NNODES_RUN_GRAPHICS="1"
+NNODES_RUN_BUFRSND="1"
+NNODES_SAVE_RESTART="1"
 #
 # Number of cores.
 #
@@ -1569,13 +1624,16 @@ PPN_RUN_FCST="24"  # This may have to be changed depending on the number of thre
 PPN_RUN_POST="24"
 PPN_RUN_WGRIB2="1"
 PPN_RUN_ANAL="24"
-PPN_RUN_ENKF="4"
+PPN_RUN_ENKF="1"
+PPN_RUN_RECENTER="20"
 PPN_PROC_RADAR="24"
 PPN_PROC_LIGHTNING="1"
 PPN_PROC_BUFR="1"
 PPN_RUN_REF2TTEN="1"
 PPN_RUN_NONVARCLDANL="1"
 PPN_RUN_GRAPHICS="12"
+PPN_RUN_BUFRSND="28"
+PPN_SAVE_RESTART="1"
 #
 # Walltimes.
 #
@@ -1587,17 +1645,31 @@ WTIME_GET_EXTRN_LBCS="00:45:00"
 WTIME_MAKE_ICS="00:30:00"
 WTIME_MAKE_LBCS="01:30:00"
 WTIME_RUN_PREPSTART="00:10:00"
-WTIME_RUN_PREPSTART_ENSMEAN="02:30:00"
+WTIME_RUN_PREPSTART_ENSMEAN="00:10:00"
 WTIME_RUN_FCST="04:30:00"
 WTIME_RUN_POST="00:15:00"
 WTIME_RUN_WGRIB2="00:40:00"
 WTIME_RUN_ANAL="00:30:00"
 WTIME_RUN_ENKF="01:00:00"
+WTIME_RUN_RECENTER="01:00:00"
 WTIME_PROC_RADAR="00:25:00"
 WTIME_PROC_LIGHTNING="00:25:00"
 WTIME_PROC_BUFR="00:25:00"
 WTIME_RUN_REF2TTEN="00:20:00"
 WTIME_RUN_NONVARCLDANL="00:20:00"
+WTIME_RUN_BUFRSND="00:45:00"
+WTIME_SAVE_RESTART="00:15:00"
+#
+# Start times.
+#
+START_TIME_SPINUP="01:10:00"
+START_TIME_PROD="02:20:00"
+START_TIME_CONVENTIONAL_SPINUP="00:40:00"
+START_TIME_LATE_ANALYSIS="01:40:00"
+START_TIME_CONVENTIONAL="00:40:00"
+START_TIME_NSSLMOSIAC="00:45:00"
+START_TIME_LIGHTNINGNC="00:45:00"
+
 #
 # Memory.
 #
@@ -1623,12 +1695,13 @@ MAXTRIES_ANAL_ENKF="1"
 MAXTRIES_RUN_POST="1"
 MAXTRIES_RUN_WGRIB2="1"
 MAXTRIES_RUN_ANAL="1"
-MAXTRIES_RUN_ENKF="1"
+MAXTRIES_RECENTER="1"
 MAXTRIES_PROCESS_RADARREF="1"
 MAXTRIES_PROCESS_LIGHTNING="1"
 MAXTRIES_PROCESS_BUFR="1"
 MAXTRIES_RADAR_REF2TTEN="1"
 MAXTRIES_CLDANL_NONVAR="1"
+MAXTRIES_SAVE_RESTART="1"
 #
 #
 #-----------------------------------------------------------------------
@@ -1677,6 +1750,9 @@ ADDNL_OUTPUT_GRIDS=( )
 # POST_FULL_MODEL_NAME
 # The full module name required by UPP and set in the itag file
 #
+# POST_SUB_MODEL_NAME
+# The SUB module name required by UPP and set in the itag file
+#
 # TESTBED_FIELDS_FN
 # The file which lists grib2 fields to be extracted to bgsfc for testbed
 # Empty string means no need to generate bgsfc for testbed
@@ -1687,6 +1763,7 @@ USE_CUSTOM_POST_CONFIG_FILE="FALSE"
 CUSTOM_POST_CONFIG_FP=""
 CUSTOM_POST_PARAMS_FP=""
 POST_FULL_MODEL_NAME="FV3R"
+POST_SUB_MODEL_NAME="NONE"
 TESTBED_FIELDS_FN=""
 #
 #-----------------------------------------------------------------------
@@ -1748,6 +1825,13 @@ TILE_SETS="full"
 #
 # DO_ENKFUPDATE:
 # Decide whether or not to run EnKF update for the ensemble members
+#
+# DO_RECENTER:
+# Decide whether or not to run recenter for the ensemble members
+#
+# DO_ENS_GRAPHICS:
+# Flag to turn on/off ensemble graphics. Turns OFF deterministic
+# graphics.
 #-----------------------------------------------------------------------
 #
 DO_ENSEMBLE="FALSE"
@@ -1755,6 +1839,8 @@ NUM_ENS_MEMBERS="1"
 DO_ENSCONTROL="FALSE"
 DO_GSIOBSERVER="FALSE"
 DO_ENKFUPDATE="FALSE"
+DO_RECENTER="FALSE"
+DO_ENS_GRAPHICS="FALSE"
 #
 #-----------------------------------------------------------------------
 #
@@ -1783,12 +1869,20 @@ DO_ENKFUPDATE="FALSE"
 # DO_RADDA:
 # Flag that determines whether to assimilate satellite radiance data
 #
+# DO_BUFRSND:
+# Decide whether or not to run EMC BUFR sounding
+#
+# USE_RRFSE_ENS:
+# Use rrfse ensemble for hybrid analysis
+#-----------------------------------------------------------------------
 DO_DACYCLE="FALSE"
 DO_SURFACE_CYCLE="FALSE"
 SURFACE_CYCLE_DELAY_HRS="1"
 DO_SOIL_ADJUST="FALSE"
 DO_UPDATE_BC="FALSE"
 DO_RADDA="FALSE"
+DO_BUFRSND="FALSE"
+USE_RRFSE_ENS="FALSE"
 #
 #-----------------------------------------------------------------------
 #
@@ -1816,23 +1910,89 @@ LBCS_ICS_ONLY="FALSE"
 #
 #-----------------------------------------------------------------------
 #
-DO_SHUM="false"
-DO_SPPT="false"
-DO_SKEB="false"
+DO_SHUM="FALSE"
+DO_SPPT="FALSE"
+DO_SKEB="FALSE"
+ISEED_SPPT="1"
+ISEED_SHUM="2"
+ISEED_SKEB="3"
+NEW_LSCALE="TRUE"
 SHUM_MAG="0.006" #Variable "shum" in input.nml
 SHUM_LSCALE="150000"
 SHUM_TSCALE="21600" #Variable "shum_tau" in input.nml
 SHUM_INT="3600" #Variable "shumint" in input.nml
-SPPT_MAG="1.0" #Variable "sppt" in input.nml
+SPPT_MAG="0.7" #Variable "sppt" in input.nml
+SPPT_LOGIT="TRUE"
 SPPT_LSCALE="150000"
 SPPT_TSCALE="21600" #Variable "sppt_tau" in input.nml
 SPPT_INT="3600" #Variable "spptint" in input.nml
+SPPT_SFCLIMIT="TRUE"
 SKEB_MAG="0.5" #Variable "skeb" in input.nml
 SKEB_LSCALE="150000"
 SKEB_TSCALE="21600" #Variable "skeb_tau" in input.nml
 SKEB_INT="3600" #Variable "skebint" in input.nml
+SKEBNORM="1"
 SKEB_VDOF="10"
-USE_ZMTNBLCK="false"
+USE_ZMTNBLCK="FALSE"
+#
+#-----------------------------------------------------------------------
+#
+# Set default SPP stochastic physics options. Each SPP option is an array,  
+# applicable (in order) to the scheme/parameter listed in SPP_VAR_LIST. 
+# Enter each value of the array in config.sh as shown below without commas
+# or single quotes (e.g., SPP_VAR_LIST=( "pbl" "sfc" "mp" "rad" "gwd" ). 
+# Both commas and single quotes will be added by Jinja when creating the
+# namelist.
+#
+# Note that SPP is currently only available for specific physics schemes 
+# used in the RAP/HRRR physics suite.  Users need to be aware of which SDF
+# is chosen when turning this option on. 
+#
+# Patterns evolve and are applied at each time step.
+#
+#-----------------------------------------------------------------------
+#
+DO_SPP="FALSE"
+SPP_VAR_LIST=( "pbl" "sfc" "mp" "rad" "gwd" ) 
+SPP_MAG_LIST=( "0.2" "0.2" "0.75" "0.2" "0.2" ) #Variable "spp_prt_list" in input.nml
+SPP_LSCALE=( "150000.0" "150000.0" "150000.0" "150000.0" "150000.0" )
+SPP_TSCALE=( "21600.0" "21600.0" "21600.0" "21600.0" "21600.0" ) #Variable "spp_tau" in input.nml
+SPP_SIGTOP1=( "0.1" "0.1" "0.1" "0.1" "0.1")
+SPP_SIGTOP2=( "0.025" "0.025" "0.025" "0.025" "0.025" )
+SPP_STDDEV_CUTOFF=( "1.5" "1.5" "2.5" "1.5" "1.5" ) 
+ISEED_SPP=( "4" "5" "6" "7" "8" )
+#
+#-----------------------------------------------------------------------
+#
+# Turn on SPP in Noah or RUC LSM (support for Noah MP is in progress).
+# Please be aware of the SDF that you choose if you wish to turn on LSM
+# SPP.
+#
+# SPP in LSM schemes is handled in the &nam_sfcperts namelist block 
+# instead of in &nam_sppperts, where all other SPP is implemented.
+#
+# The default perturbation frequency is determined by the fhcyc namelist 
+# entry.  Since that parameter is set to zero in the SRW App, use 
+# LSM_SPP_EACH_STEP to perturb every time step. 
+#
+# Perturbations to soil moisture content (SMC) are only applied at the  
+# first time step.
+#
+# LSM perturbations include SMC - soil moisture content (volume fraction),
+# VGF - vegetation fraction, ALB - albedo, SAL - salinity, 
+# EMI - emissivity, ZOL - surface roughness (cm), and STC - soil temperature.
+#
+# Only five perturbations at a time can be applied currently, but all seven
+# are shown below.  In addition, only one unique iseed value is allowed 
+# at the moment, and is used for each pattern.
+#
+DO_LSM_SPP="FALSE" #If true, sets lndp_type=2
+LSM_SPP_TSCALE=( "21600" "21600" "21600" "21600" "21600" "21600" "21600" )
+LSM_SPP_LSCALE=( "150000" "150000" "150000" "150000" "150000" "150000" "150000" )
+ISEED_LSM_SPP=( "9" )
+LSM_SPP_VAR_LIST=( "smc" "vgf" "alb" "sal" "emi" "zol" "stc" )
+LSM_SPP_MAG_LIST=( "0.2" "0.001" "0.001" "0.001" "0.001" "0.001" "0.2" )
+LSM_SPP_EACH_STEP="TRUE" #Sets lndp_each_step=.true.
 #
 #-----------------------------------------------------------------------
 # 

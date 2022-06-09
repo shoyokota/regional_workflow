@@ -174,6 +174,7 @@ settings="\
   'account': $ACCOUNT
   'service_account': ${SERVICE_ACCOUNT:-$ACCOUNT}
   'reservation': $RESERVATION
+  'reservation_post': $RESERVATION_POST
   'sched': $SCHED
   'partition_default': ${PARTITION_DEFAULT}
   'queue_default': ${QUEUE_DEFAULT}
@@ -188,6 +189,8 @@ settings="\
   'queue_analysis': ${QUEUE_ANALYSIS}
   'partition_wgrib2': ${PARTITION_WGRIB2}
   'queue_wgrib2': ${QUEUE_WGRIB2}
+  'partition_post': ${PARTITION_POST}
+  'queue_post': ${QUEUE_POST}
 #
 # Workflow task names.
 #
@@ -215,6 +218,8 @@ settings="\
   'process_bufr': ${PROCESS_BUFR_TN}
   'radar_refl2tten': ${RADAR_REFL2TTEN_TN}
   'cldanl_nonvar': ${CLDANL_NONVAR_TN}
+  'run_bufrsnd_tn': ${RUN_BUFRSND_TN}
+  'save_restart': ${SAVE_RESTART_TN}
   'tag': ${TAG}
 #
 # Number of nodes to use for each task.
@@ -230,6 +235,7 @@ settings="\
   'nnodes_run_fcst': ${NNODES_RUN_FCST}
   'nnodes_run_anal': ${NNODES_RUN_ANAL}
   'nnodes_run_enkf': ${NNODES_RUN_ENKF}
+  'nnodes_run_recenter': ${NNODES_RUN_RECENTER}
   'nnodes_run_post': ${NNODES_RUN_POST}
   'nnodes_run_wgrib2': ${NNODES_RUN_WGRIB2}
   'nnodes_proc_radar': ${NNODES_PROC_RADAR}
@@ -238,6 +244,8 @@ settings="\
   'nnodes_run_ref2tten': ${NNODES_RUN_REF2TTEN}
   'nnodes_run_nonvarcldanl': ${NNODES_RUN_NONVARCLDANL}
   'nnodes_run_graphics': ${NNODES_RUN_GRAPHICS}
+  'nnodes_run_bufrsnd': ${NNODES_RUN_BUFRSND}
+  'nnodes_save_restart': ${NNODES_SAVE_RESTART}
 #
 # Number of cores used for a task
 #
@@ -263,6 +271,7 @@ settings="\
   'ppn_run_fcst': ${PPN_RUN_FCST}
   'ppn_run_anal': ${PPN_RUN_ANAL}
   'ppn_run_enkf': ${PPN_RUN_ENKF}
+  'ppn_run_recenter': ${PPN_RUN_RECENTER}
   'ppn_run_post': ${PPN_RUN_POST}
   'ppn_run_wgrib2': ${PPN_RUN_WGRIB2}
   'ppn_proc_radar': ${PPN_PROC_RADAR}
@@ -271,6 +280,8 @@ settings="\
   'ppn_run_ref2tten': ${PPN_RUN_REF2TTEN}
   'ppn_run_nonvarcldanl': ${PPN_RUN_NONVARCLDANL}
   'ppn_run_graphics': ${PPN_RUN_GRAPHICS}
+  'ppn_run_bufrsnd': ${PPN_RUN_BUFRSND}
+  'ppn_save_restart': ${PPN_SAVE_RESTART}
 #
 # Maximum wallclock time for each task.
 #
@@ -286,6 +297,7 @@ settings="\
   'wtime_run_fcst': ${WTIME_RUN_FCST}
   'wtime_run_anal': ${WTIME_RUN_ANAL}
   'wtime_run_enkf': ${WTIME_RUN_ENKF}
+  'wtime_run_recenter': ${WTIME_RUN_RECENTER}
   'wtime_run_post': ${WTIME_RUN_POST}
   'wtime_run_wgrib2': ${WTIME_RUN_WGRIB2}
   'wtime_proc_radar': ${WTIME_PROC_RADAR}
@@ -293,6 +305,18 @@ settings="\
   'wtime_proc_bufr': ${WTIME_PROC_BUFR}
   'wtime_run_ref2tten': ${WTIME_RUN_REF2TTEN}
   'wtime_run_nonvarcldanl': ${WTIME_RUN_NONVARCLDANL}
+  'wtime_run_bufrsnd': ${WTIME_RUN_BUFRSND}
+  'wtime_save_restart': ${WTIME_SAVE_RESTART}
+#
+# start time for each task.
+#
+  'start_time_spinup': ${START_TIME_SPINUP}
+  'start_time_prod': ${START_TIME_PROD}
+  'start_time_conventional_spinup': ${START_TIME_CONVENTIONAL_SPINUP}
+  'start_time_late_analysis': ${START_TIME_LATE_ANALYSIS}
+  'start_time_conventional': ${START_TIME_CONVENTIONAL}
+  'start_time_nsslmosiac': ${START_TIME_NSSLMOSIAC}
+  'start_time_lightningnc': ${START_TIME_LIGHTNINGNC}
 #
 # Maximum memory for each task.
 #
@@ -315,6 +339,7 @@ settings="\
   'maxtries_run_fcst': ${MAXTRIES_RUN_FCST}
   'maxtries_anal_gsi': ${MAXTRIES_ANAL_GSI}
   'maxtries_anal_enkf': ${MAXTRIES_ANAL_ENKF}
+  'maxtries_recenter': ${MAXTRIES_RECENTER}
   'maxtries_run_post': ${MAXTRIES_RUN_POST}
   'maxtries_run_wgrib2': ${MAXTRIES_RUN_WGRIB2}
   'maxtries_process_radarref': ${MAXTRIES_PROCESS_RADARREF}
@@ -322,6 +347,7 @@ settings="\
   'maxtries_process_bufr': ${MAXTRIES_PROCESS_BUFR}
   'maxtries_radar_ref2tten': ${MAXTRIES_RADAR_REF2TTEN}
   'maxtries_cldanl_nonvar': ${MAXTRIES_CLDANL_NONVAR}
+  'maxtries_save_restart': ${MAXTRIES_SAVE_RESTART}
 #
 # Flags that specify whether to run the preprocessing tasks.
 #
@@ -341,7 +367,12 @@ settings="\
   'jobsdir': $JOBSDIR
   'logdir': $LOGDIR
   'cycle_basedir': ${CYCLE_BASEDIR}
+  'ensctrl_cycle_basedir': ${ENSCTRL_CYCLE_BASEDIR:-}
   'nwges_basedir': ${NWGES_BASEDIR}
+  'ensctrl_nwges_basedir': ${ENSCTRL_NWGES_BASEDIR}
+  'ensctrl_comout_basedir': ${ENSCTRL_COMOUT_BASEDIR}
+  'ensctrl_comout_dir': ${ENSCTRL_COMOUT_DIR}
+  'rrfse_nwges_basedir': ${RRFSE_NWGES_BASEDIR}
   'obspath': ${OBSPATH}
   'global_var_defns_fp': ${GLOBAL_VAR_DEFNS_FP}
   'load_modules_run_task_fp': ${LOAD_MODULES_RUN_TASK_FP}
@@ -370,6 +401,8 @@ settings="\
   'cycl_hrs': [ $( printf "\'%s\', " "${CYCL_HRS[@]}" ) ]
   'cycl_hrs_spinstart': [ $( printf "\'%s\', " "${CYCL_HRS_SPINSTART[@]}" ) ]
   'cycl_hrs_prodstart': [ $( printf "\'%s\', " "${CYCL_HRS_PRODSTART[@]}" ) ]
+  'cycl_hrs_hyb_fv3lam_ens': [ $( printf "\'%s\', " "${CYCL_HRS_HYB_FV3LAM_ENS[@]}" ) ]
+  'restart_hrs_prod': ${RESTART_INTERVAL}
   'cycl_freq': !!str 12:00:00
   'at_start_cycledef': ${AT_START_CYCLEDEF}
   'initial_cycledef': ${INITIAL_CYCLEDEF}
@@ -388,6 +421,7 @@ settings="\
   'boundary_long_len_hrs': ${BOUNDARY_LONG_LEN_HRS}
   'postproc_len_hrs': ${POSTPROC_LEN_HRS}
   'postproc_long_len_hrs': ${POSTPROC_LONG_LEN_HRS}
+  'postproc_nsout_min': ${NSOUT_MIN}
 #
 # Ensemble-related parameters.
 #
@@ -400,6 +434,9 @@ settings="\
   'do_enscontrol': ${DO_ENSCONTROL}
   'do_gsiobserver': ${DO_GSIOBSERVER}
   'do_enkfupdate': ${DO_ENKFUPDATE}
+  'do_recenter': ${DO_RECENTER}
+  'do_bufrsnd': ${DO_BUFRSND}
+  'do_ens_graphics': ${DO_ENS_GRAPHICS}
 #
 # data assimilation related parameters.
 #
@@ -410,6 +447,10 @@ settings="\
   'do_refl2tten': ${DO_REFL2TTEN}
   'do_spinup': ${DO_SPINUP}
   'do_nldn_lght': ${DO_NLDN_LGHT}
+  'regional_ensemble_option': ${regional_ensemble_option}
+  'radar_ref_thinning': ${RADAR_REF_THINNING}
+  'ensctrl_stmp': ${ENSCTRL_STMP}
+  'use_rrfse_ens': ${USE_RRFSE_ENS}
 #
 # graphics related parameters
 #
@@ -727,6 +768,9 @@ settings="\
     'blocksize': $BLOCKSIZE,
     'ccpp_suite': ${CCPP_PHYS_SUITE},
   }
+'fv3gfs_io': {
+    'use_io_netcdf': ${USE_IO_NETCDF:-FALSE},
+  }
 'fv_core_nml': {
     'target_lon': ${LON_CTR},
     'target_lat': ${LAT_CTR},
@@ -754,23 +798,13 @@ settings="\
     'do_shum': ${DO_SHUM},
     'do_sppt': ${DO_SPPT},
     'do_skeb': ${DO_SKEB},
+    'do_spp': ${DO_SPP},
+    'n_var_spp': ${N_VAR_SPP},
+    'n_var_lndp': ${N_VAR_LNDP},
+    'lndp_type': ${LNDP_TYPE},
+    'lndp_each_step': ${LSM_SPP_EACH_STEP},
+    'fhcyc': ${FHCYC_LSM_SPP_OR_NOT},
     'print_diff_pgr': ${PRINT_DIFF_PGR},
-  }
-'nam_stochy': {
-    'shum': ${SHUM_MAG},
-    'shum_lscale': ${SHUM_LSCALE},
-    'shum_tau': ${SHUM_TSCALE},
-    'shumint': ${SHUM_INT},
-    'sppt': ${SPPT_MAG},
-    'sppt_lscale': ${SPPT_LSCALE},
-    'sppt_tau': ${SPPT_TSCALE},
-    'spptint': ${SPPT_INT},
-    'skeb': ${SKEB_MAG},
-    'skeb_lscale': ${SKEB_LSCALE},
-    'skeb_tau': ${SKEB_TSCALE},
-    'skebint': ${SKEB_INT},
-    'skeb_vdof': ${SKEB_VDOF},
-    'use_zmtnblck': ${USE_ZMTNBLCK},
   }"
 #
 # Add to "settings" the values of those namelist variables that specify
@@ -826,7 +860,91 @@ done
 #
 settings="$settings
   }"
+#
+# Add the relevant tendency-based stochastic physics namelist variables to
+# "settings" when running with SPPT, SHUM, or SKEB turned on. If running 
+# with SPP or LSM SPP, set the "new_lscale" variable.  Otherwise only 
+# include an empty "nam_stochy" stanza. 
+#
+settings="$settings
+'nam_stochy': {"
+if [ "${DO_SPPT}" = "TRUE" ]; then 
+    settings="$settings
+    'iseed_sppt': ${ISEED_SPPT},
+    'new_lscale': ${NEW_LSCALE},
+    'sppt': ${SPPT_MAG},
+    'sppt_logit': ${SPPT_LOGIT},
+    'sppt_lscale': ${SPPT_LSCALE},
+    'sppt_sfclimit': ${SPPT_SFCLIMIT},
+    'sppt_tau': ${SPPT_TSCALE},
+    'spptint': ${SPPT_INT},
+    'use_zmtnblck': ${USE_ZMTNBLCK},"
+fi
 
+if [ "${DO_SHUM}" = "TRUE" ]; then 
+    settings="$settings
+    'iseed_shum': ${ISEED_SHUM},
+    'new_lscale': ${NEW_LSCALE},
+    'shum': ${SHUM_MAG},
+    'shum_lscale': ${SHUM_LSCALE},
+    'shum_tau': ${SHUM_TSCALE},
+    'shumint': ${SHUM_INT},"
+fi
+
+if [ "${DO_SKEB}" = "TRUE" ]; then
+    settings="$settings
+    'iseed_skeb': ${ISEED_SKEB},
+    'new_lscale': ${NEW_LSCALE},
+    'skeb': ${SKEB_MAG},
+    'skeb_lscale': ${SKEB_LSCALE},
+    'skebnorm': ${SKEBNORM},
+    'skeb_tau': ${SKEB_TSCALE},
+    'skebint': ${SKEB_INT},
+    'skeb_vdof': ${SKEB_VDOF},"
+fi
+
+if [ "${DO_SPP}" = "TRUE" ] || [ "${DO_LSM_SPP}" = "TRUE" ]; then
+    settings="$settings
+    'new_lscale': ${NEW_LSCALE},"
+fi
+settings="$settings
+  }"
+#
+# Add the relevant SPP namelist variables to "settings" when running with
+# SPP turned on.  Otherwise only include an empty "nam_sppperts" stanza.
+#
+settings="$settings
+'nam_sppperts': {"
+if [ "${DO_SPP}" = "TRUE" ]; then
+    settings="$settings
+    'iseed_spp': [ $( printf "%s, " "${ISEED_SPP[@]}" ) ],
+    'spp_lscale': [ $( printf "%s, " "${SPP_LSCALE[@]}" ) ],
+    'spp_prt_list': [ $( printf "%s, " "${SPP_MAG_LIST[@]}" ) ],
+    'spp_sigtop1': [ $( printf "%s, " "${SPP_SIGTOP1[@]}" ) ],
+    'spp_sigtop2': [ $( printf "%s, " "${SPP_SIGTOP2[@]}" ) ],
+    'spp_stddev_cutoff': [ $( printf "%s, " "${SPP_STDDEV_CUTOFF[@]}" ) ],
+    'spp_tau': [ $( printf "%s, " "${SPP_TSCALE[@]}" ) ],
+    'spp_var_list': [ $( printf "%s, " "${SPP_VAR_LIST[@]}" ) ],"
+fi
+settings="$settings
+  }"
+#
+# Add the relevant LSM SPP namelist variables to "settings" when running with
+# LSM SPP turned on.
+#
+settings="$settings
+'nam_sfcperts': {"
+if [ "${DO_LSM_SPP}" = "TRUE" ]; then
+    settings="$settings
+    'lndp_type': ${LNDP_TYPE},
+    'lndp_tau': [ $( printf "%s, " "${LSM_SPP_TSCALE[@]}" ) ],
+    'lndp_lscale': [ $( printf "%s, " "${LSM_SPP_LSCALE[@]}" ) ],
+    'iseed_lndp': [ $( printf "%s, " "${ISEED_LSM_SPP[@]}" ) ],
+    'lndp_var_list': [ $( printf "%s, " "${LSM_SPP_VAR_LIST[@]}" ) ],
+    'lndp_prt_list': [ $( printf "%s, " "${LSM_SPP_MAG_LIST[@]}" ) ],"
+fi
+settings="$settings
+  }"
 print_info_msg $VERBOSE "
 The variable \"settings\" specifying values of the namelist variables
 has been set as follows:

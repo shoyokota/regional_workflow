@@ -6,6 +6,8 @@ SFCOBS_USELIST="/lfs4/BMC/amb-verif/rap_ops_mesonet_uselists"
 SST_ROOT="/lfs4/BMC/public/data/grids/ncep/sst/0p083deg/grib2"
 GVF_ROOT="/public/data/sat/ncep/viirs/gvf/grib2"
 
+BERROR_FN="rrfs_glb_berror.l127y194.f77"
+
 if [[ $MACHINE == "hera" ]] ; then
 
 # for using RAP as boundary and initial
@@ -42,8 +44,14 @@ if [[ $DO_RETRO == "TRUE" ]] ; then
          EXTRN_MDL_SOURCE_BASEDIR_ICS="/mnt/lfs4/HFIP/gsihyb/Chunhua.Zhou/data/GEFS/public/pgrb2"
        elif [[ ${EXTRN_MDL_NAME_ICS} == "HRRRDAS" ]]; then
          EXTRN_MDL_SOURCE_BASEDIR_ICS="/mnt/lfs4/HFIP/gsihyb/Chunhua.Zhou/data/HRRRE"
+       elif [[ ${EXTRN_MDL_NAME_ICS} == "FV3GFS" ]]; then
+         EXTRN_MDL_SOURCE_BASEDIR_ICS="/mnt/lfs4/HFIP/gsihyb/Chunhua.Zhou/data/FV3GFS/0p25deg/grib2"
        fi
-       EXTRN_MDL_SOURCE_BASEDIR_LBCS="/mnt/lfs4/HFIP/gsihyb/Chunhua.Zhou/data/GEFS/public/pgrb2"
+       if [[ ${EXTRN_MDL_NAME_LBCS} == "GEFS" ]]; then
+         EXTRN_MDL_SOURCE_BASEDIR_LBCS="/mnt/lfs4/HFIP/gsihyb/Chunhua.Zhou/data/GEFS/public/pgrb2"
+       elif [[ ${EXTRN_MDL_NAME_LBCS} == "FV3GFS" ]]; then
+         EXTRN_MDL_SOURCE_BASEDIR_LBCS="/mnt/lfs4/HFIP/gsihyb/Chunhua.Zhou/data/FV3GFS/0p25deg/grib2"
+       fi
        OBSPATH=/mnt/lfs4/HFIP/gsihyb/Chunhua.Zhou/data/obs
     else
 #        EXTRN_MDL_SOURCE_BASEDIR_ICS=/mnt/lfs4/BMC/wrfruc/Ruifang.Li/data/hrrr/conus/wrfnat/grib2
