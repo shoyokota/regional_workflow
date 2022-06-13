@@ -1,8 +1,8 @@
-MACHINE="jet"
+MACHINE="orion"
 ACCOUNT="nrtrr"
 #RESERVATION="rrfsdet"
-EXPT_BASEDIR="YourOwnSpace"
-EXPT_SUBDIR="RRFS_CONUS_3km_ens"
+EXPT_BASEDIR="/work2/noaa/fv3-cam/${USER}/rrfs/test"
+EXPT_SUBDIR="rrfs_b_ens"
 
 if [[ -n $RESERVATION ]] ; then
   ACCOUNT=rtrr
@@ -23,8 +23,13 @@ if [[ $MACHINE == "hera" ]] ; then
 fi
 
 if [[ $MACHINE == "orion" ]] ; then
-  ACCOUNT=ztrr
+  ACCOUNT=fv3-cam
+  PARTITION_ANALYSIS="orion"
   QUEUE_ANALYSIS="batch"
+  QUEUE_WGRIB2="batch"
+  QUEUE_GRAPHICS="batch"
+  QUEUE_POST="batch"
+  NCORES_PER_NODE=24
 fi
 
 if [[ $MACHINE == "wcoss_dell_p3" ]] ; then
@@ -69,21 +74,21 @@ BOUNDARY_LEN_HRS="18"
 
 # avaialble retro period:
 # 20210511-20210531; 20210718-20210801
-DATE_FIRST_CYCL="20220404"
-DATE_LAST_CYCL="20220404"
+DATE_FIRST_CYCL="20210516"
+DATE_LAST_CYCL="20210516"
 CYCL_HRS=( "00" "12" )
-CYCL_HRS=( "21" )
+CYCL_HRS=( "09" )
 CYCL_HRS_SPINSTART=("03" "15")
 CYCL_HRS_PRODSTART=("09" "21")
-CYCL_HRS_PRODSTART=("21")
+CYCL_HRS_PRODSTART=("09")
 #CYCLEMONTH="5"
 #CYCLEDAY="11-12"
 
 PREEXISTING_DIR_METHOD="upgrade" # "rename"
-INITIAL_CYCLEDEF="${DATE_FIRST_CYCL}2100 ${DATE_LAST_CYCL}2300 12:00:00"
-BOUNDARY_CYCLEDEF="${DATE_FIRST_CYCL}2100 ${DATE_LAST_CYCL}2300 12:00:00"
-PROD_CYCLEDEF="${DATE_FIRST_CYCL}2100 ${DATE_LAST_CYCL}2300 01:00:00"
-POSTPROC_CYCLEDEF="${DATE_FIRST_CYCL}2100 ${DATE_LAST_CYCL}2300 01:00:00"
+INITIAL_CYCLEDEF="${DATE_FIRST_CYCL}0900 ${DATE_LAST_CYCL}2300 24:00:00"
+BOUNDARY_CYCLEDEF="${DATE_FIRST_CYCL}0900 ${DATE_LAST_CYCL}2300 24:00:00"
+PROD_CYCLEDEF="${DATE_FIRST_CYCL}0900 ${DATE_LAST_CYCL}2300 01:00:00"
+POSTPROC_CYCLEDEF="${DATE_FIRST_CYCL}0900 ${DATE_LAST_CYCL}2300 01:00:00"
 #POSTPROC_LONG_CYCLEDEF="${DATE_FIRST_CYCL}0900 ${DATE_LAST_CYCL}2300 03:00:00"
 #ARCHIVE_CYCLEDEF="${DATE_FIRST_CYCL}0700 ${DATE_LAST_CYCL}2300 24:00:00"
 if [[ $DO_SPINUP == "TRUE" ]] ; then
@@ -110,7 +115,8 @@ HYBENSMEM_NMIN=66
 HALO_BLEND=20
 IO_LAYOUT_Y=1
 PPN_RUN_REF2TTEN=1
-PPN_RUN_NONVARCLDANL=1
+PPN_RUN_NONVARCLDANL=${IO_LAYOUT_Y}
+NATIVE_RUN_FCST="--cpus-per-task 1"
 
 PRINT_DIFF_PGR="TRUE"
 
@@ -123,10 +129,11 @@ if [[ -n $RESERVATION ]] ; then
   PPN_RUN_POST="40"
 fi
 
-WTIME_RUN_FCST="02:00:00"
+WTIME_RUN_FCST="02:45:00"
 WTIME_MAKE_LBCS="02:00:00"
+WTIME_RUN_WGRIB2="00:28:00"
 
-EXTRN_MDL_NAME_ICS="GEFS"
+EXTRN_MDL_NAME_ICS="GDASENKF"
 EXTRN_MDL_NAME_LBCS="FV3GFS"
 
 FV3GFS_FILE_FMT_ICS="grib2"
@@ -179,10 +186,12 @@ if [[ ${DO_ENSEMBLE}  == "TRUE" ]]; then
    DO_RECENTER="TRUE"
    DO_ENS_GRAPHICS="TRUE"
    ARCHIVEDIR="/5year/BMC/wrfruc/rrfs_ens"
-   NNODES_RUN_RECENTER="2"
-   PPN_RUN_RECENTER="15"
+   NNODES_RUN_RECENTER="3"
+   PPN_RUN_RECENTER="31"
    CLEAN_OLDFCST_HRS="48"
    CLEAN_OLDSTMPPOST_HRS="48"
+   cld_bld_hgt=0.0
+   l_precip_clear_only=.true.
 fi
 
 RUN="RRFS_conus_3km"
@@ -190,11 +199,12 @@ COMINgfs=""
 
 . set_rrfs_config.sh
 
-STMP="YourOwnSpace/NCO_dirs/stmp"  # Path to directory STMP that mostly contains input files.
-PTMP="YourOwnSpace/NCO_dirs/ptmp"  # Path to directory STMP that mostly contains input files.
-NWGES="YourOwnSpace/NCO_dirs/nwges"  # Path to directory NWGES that save boundary, cold initial, restart files
+STMP="${EXPT_BASEDIR}/${EXPT_SUBDIR}/ptmp/stmp"  # Path to directory STMP that mostly contains input files.
+PTMP="${EXPT_BASEDIR}/${EXPT_SUBDIR}/ptmp"  # Path to directory STMP that mostly contains input files.
+NWGES="${EXPT_BASEDIR}/${EXPT_SUBDIR}/ptmp/nwges"  # Path to directory NWGES that save boundary, cold initial, restart files
 if [[ ${DO_RECENTER}  == "TRUE" ]]; then
-  ENSCTRL_STMP="YourOwnSpace/NCO_dirs/stmp"  # Path to directory STMP that mostly contains control input files for ensemble recentering.
-  ENSCTRL_NWGES="YourOwnSpace/NCO_dirs/nwges"  # Path to directory STMP that mostly contains control input files for ensemble recentering.
+  ENSCTRL_STMP="${EXPT_BASEDIR}/rrfs_b/ptmp/stmp"  # Path to directory STMP that mostly contains control input files for ensemble recentering.
+  ENSCTRL_PTMP="${EXPT_BASEDIR}/rrfs_b/ptmp"  # Path to directory STMP that mostly contains control input files for ensemble recentering.
+  ENSCTRL_NWGES="${EXPT_BASEDIR}/rrfs_b/ptmp/nwges"  # Path to directory STMP that mostly contains control input files for ensemble recentering.
 fi
 
