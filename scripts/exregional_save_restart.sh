@@ -76,6 +76,26 @@ print_input_args valid_args
 #
 #-----------------------------------------------------------------------
 #
+# Set to use mppnccombine
+#
+#-----------------------------------------------------------------------
+#
+case $MACHINE in
+
+  "ORION")
+    DO_IO_COMBINE="TRUE"
+    IO_LAYOUT_Y_IN=1
+    ;;
+
+  *)
+    DO_IO_COMBINE="FALSE"
+    IO_LAYOUT_Y_IN=${IO_LAYOUT_Y}
+    ;;
+
+esac
+#
+#-----------------------------------------------------------------------
+#
 # Get the cycle date and hour (in formats of yyyymmdd and hh, respectively)
 # from cdate.
 #
@@ -104,7 +124,7 @@ save_hh=${save_time:8:2}
 filelist="fv_core.res.nc coupler.res"
 filelistn="fv_core.res.tile1.nc fv_srf_wnd.res.tile1.nc fv_tracer.res.tile1.nc phy_data.nc sfc_data.nc"
 filelistcold="gfs_data.tile7.halo0.nc sfc_data.tile7.halo0.nc"
-n_iolayouty=$(($IO_LAYOUT_Y-1))
+n_iolayouty=$(($IO_LAYOUT_Y_IN-1))
 list_iolayout=$(seq 0 $n_iolayouty)
 
 restart_prefix=${save_yyyy}${save_mm}${save_dd}.${save_hh}0000
@@ -114,7 +134,7 @@ if [ ! -r ${nwges_dir}/INPUT/gfs_ctrl.nc ]; then
     for file in ${filelist}; do
       cp_vrfy $run_dir/INPUT/${file} ${nwges_dir}/INPUT/${file}
     done
-    if [ "${IO_LAYOUT_Y}" == "1" ]; then
+    if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
       for file in ${filelistn}; do
         cp_vrfy $run_dir/INPUT/${file} ${nwges_dir}/INPUT/${file}
       done
@@ -134,10 +154,19 @@ if [ ! -r ${nwges_dir}/INPUT/gfs_ctrl.nc ]; then
   fi
 fi
 if [ -r "$run_dir/RESTART/${restart_prefix}.coupler.res" ]; then
+  if [ "${DO_IO_COMBINE}" == "TRUE" ] && [ "${IO_LAYOUT_Y}" != "1" ]; then
+    ${EXECDIR}/mppnccombine -64 $run_dir/RESTART/${restart_prefix}.fv_core.res.tile1.nc    $run_dir/RESTART/${restart_prefix}.fv_core.res.tile1.nc.????
+    ${EXECDIR}/mppnccombine -64 $run_dir/RESTART/${restart_prefix}.fv_srf_wnd.res.tile1.nc $run_dir/RESTART/${restart_prefix}.fv_srf_wnd.res.tile1.nc.????
+    ${EXECDIR}/mppnccombine -64 $run_dir/RESTART/${restart_prefix}.fv_tracer.res.tile1.nc  $run_dir/RESTART/${restart_prefix}.fv_tracer.res.tile1.nc.????
+    if [ "${USE_IO_NETCDF}" == "FALSE" ]; then
+      ${EXECDIR}/mppnccombine -64 $run_dir/RESTART/${restart_prefix}.phy_data.nc $run_dir/RESTART/${restart_prefix}.phy_data.nc.????
+      ${EXECDIR}/mppnccombine -64 $run_dir/RESTART/${restart_prefix}.sfc_data.nc $run_dir/RESTART/${restart_prefix}.sfc_data.nc.????
+    fi
+  fi
   for file in ${filelist}; do
     mv_vrfy $run_dir/RESTART/${restart_prefix}.${file} ${nwges_dir}/RESTART/${restart_prefix}.${file}
   done
-  if [ "${IO_LAYOUT_Y}" == "1" ]; then
+  if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
     for file in ${filelistn}; do
       mv_vrfy $run_dir/RESTART/${restart_prefix}.${file} ${nwges_dir}/RESTART/${restart_prefix}.${file}
     done
@@ -167,10 +196,19 @@ else
                  ( \"${FCST_LEN_HRS_thiscycle}\") "
 
   if [ -r "$run_dir/RESTART/coupler.res" ] && [ ${fhr} -eq ${FCST_LEN_HRS_thiscycle} ] ; then
+    if [ "${DO_IO_COMBINE}" == "TRUE" ] && [ "${IO_LAYOUT_Y}" != "1" ]; then
+      ${EXECDIR}/mppnccombine -64 $run_dir/RESTART/fv_core.res.tile1.nc    $run_dir/RESTART/fv_core.res.tile1.nc.????
+      ${EXECDIR}/mppnccombine -64 $run_dir/RESTART/fv_srf_wnd.res.tile1.nc $run_dir/RESTART/fv_srf_wnd.res.tile1.nc.????
+      ${EXECDIR}/mppnccombine -64 $run_dir/RESTART/fv_tracer.res.tile1.nc  $run_dir/RESTART/fv_tracer.res.tile1.nc.????
+      if [ "${USE_IO_NETCDF}" == "FALSE" ]; then
+        ${EXECDIR}/mppnccombine -64 $run_dir/RESTART/phy_data.nc $run_dir/RESTART/phy_data.nc.????
+        ${EXECDIR}/mppnccombine -64 $run_dir/RESTART/sfc_data.nc $run_dir/RESTART/sfc_data.nc.????
+      fi
+    fi
     for file in ${filelist}; do
        mv_vrfy $run_dir/RESTART/${file} ${nwges_dir}/RESTART/${restart_prefix}.${file}
     done
-    if [ "${IO_LAYOUT_Y}" == "1" ]; then
+    if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
       for file in ${filelistn}; do
         mv_vrfy $run_dir/RESTART/${file} ${nwges_dir}/RESTART/${restart_prefix}.${file}
       done

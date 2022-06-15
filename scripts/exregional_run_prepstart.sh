@@ -81,35 +81,43 @@ case $MACHINE in
     export ptile=1
     export threads=1
     APRUN="aprun -j 1 -n${ntasks} -N${ptile} -d${threads} -cc depth"
+    IO_LAYOUT_Y_IN=${IO_LAYOUT_Y}
     ;;
 
   "WCOSS_DELL_P3")
     APRUN="mpirun"
+    IO_LAYOUT_Y_IN=${IO_LAYOUT_Y}
     ;;
 
   "HERA")
     APRUN="srun"
+    IO_LAYOUT_Y_IN=${IO_LAYOUT_Y}
     ;;
 
   "ORION")
     APRUN="srun"
+    IO_LAYOUT_Y_IN=1
     ;;
 
   "JET")
     APRUN="srun"
+    IO_LAYOUT_Y_IN=${IO_LAYOUT_Y}
     ;;
 
   "ODIN")
     APRUN="srun -n 1"
+    IO_LAYOUT_Y_IN=${IO_LAYOUT_Y}
     ;;
 
   "CHEYENNE")
     module list
     APRUN="mpirun -np 1"
+    IO_LAYOUT_Y_IN=${IO_LAYOUT_Y}
     ;;
 
   "STAMPEDE")
     APRUN="ibrun -n 1"
+    IO_LAYOUT_Y_IN=${IO_LAYOUT_Y}
     ;;
 
   *)
@@ -301,12 +309,12 @@ else
 #
   filelistn="fv_core.res.tile1.nc fv_srf_wnd.res.tile1.nc fv_tracer.res.tile1.nc phy_data.nc sfc_data.nc"
   checkfile=${bkpath}/${restart_prefix}coupler.res
-  n_iolayouty=$(($IO_LAYOUT_Y-1))
+  n_iolayouty=$(($IO_LAYOUT_Y_IN-1))
   list_iolayout=$(seq 0 $n_iolayouty)
   if [ -r "${checkfile}" ] ; then
     cp_vrfy ${bkpath}/${restart_prefix}coupler.res                bk_coupler.res
     cp_vrfy ${bkpath}/${restart_prefix}fv_core.res.nc             fv_core.res.nc
-    if [ "${IO_LAYOUT_Y}" == "1" ]; then
+    if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
       for file in ${filelistn}; do
         cp_vrfy ${bkpath}/${restart_prefix}${file}     ${file}
         ln_vrfy -s ${bkpath}/${restart_prefix}${file}     bk_${file}
@@ -328,7 +336,7 @@ else
 #
 # remove checksum from restart files. Checksum will cause trouble if model initializes from analysis
 #
-    if [ "${IO_LAYOUT_Y}" == "1" ]; then
+    if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
       for file in ${filelistn}; do
         ncatted -a checksum,,d,, ${file}
       done
@@ -375,7 +383,7 @@ if [ ${HH} -eq ${SNOWICE_update_hour} ] && [ ${cycle_type} == "prod" ] ; then
    if [ -r "latest.SNOW_IMS" ]; then
      ln_vrfy -sf ./latest.SNOW_IMS                imssnow2
 
-     if [ "${IO_LAYOUT_Y}" == "1" ]; then
+     if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
        ln_vrfy -sf ${FIX_GSI}/${PREDEF_GRID_NAME}/fv3_grid_spec  fv3_grid_spec
      else
        for ii in ${list_iolayout}
@@ -398,7 +406,7 @@ Please ensure that you've built this executable."
      fi
      cp_vrfy ${snowice_exec_fp} .
 
-     ${APRUN} ./${snowice_exec_fn} ${IO_LAYOUT_Y} || \
+     ${APRUN} ./${snowice_exec_fn} ${IO_LAYOUT_Y_IN} || \
      print_err_msg_exit "\
  Call to executable (fvcom_exe) to modify sfc fields for FV3-LAM failed:
    snowice_exe = \"${snowice_exec_fp}\"
@@ -448,7 +456,7 @@ cat << EOF > sst.namelist
   ihr=${HH}
 /
 EOF
-     if [ "${IO_LAYOUT_Y}" == "1" ]; then
+     if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
        ln_vrfy -sf ${FIX_GSI}/${PREDEF_GRID_NAME}/fv3_grid_spec  fv3_grid_spec
        ${EXECDIR}/process_updatesst.exe > stdout_sstupdate 2>&1
      else
@@ -498,7 +506,7 @@ if [ ${SFC_CYC} -eq 1 ] || [ ${SFC_CYC} -eq 2 ] ; then  # cycle surface fields
 
           n=${DA_CYCLE_INTERV}
           while [[ $n -le 6 ]] ; do
-             if [ "${IO_LAYOUT_Y}" == "1" ]; then
+             if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
                checkfile=${bkpath}/${restart_prefix}sfc_data.nc
              else
                checkfile=${bkpath}/${restart_prefix}sfc_data.nc.0000
@@ -524,14 +532,14 @@ if [ ${SFC_CYC} -eq 1 ] || [ ${SFC_CYC} -eq 2 ] ; then  # cycle surface fields
       if [ "${bkpath_find}" == "missing" ]; then
         print_info_msg "Warning: cannot find surface from previous cycle"
       else
-        if [ "${IO_LAYOUT_Y}" == "1" ]; then
+        if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
           checkfile=${bkpath_find}/${restart_prefix_find}sfc_data.nc
         else
           checkfile=${bkpath_find}/${restart_prefix_find}sfc_data.nc.0000
         fi
         if [ -r "${checkfile}" ]; then
           if [ ${SFC_CYC} -eq 1 ]; then   # cycle surface at cold start cycle
-            if [ "${IO_LAYOUT_Y}" == "1" ]; then 
+            if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
               cp_vrfy ${checkfile}  ${restart_prefix_find}sfc_data.nc
               mv sfc_data.tile7.halo0.nc cold.sfc_data.tile7.halo0.nc
               ncks -v geolon,geolat cold.sfc_data.tile7.halo0.nc geolonlat.nc
@@ -542,7 +550,7 @@ if [ ${SFC_CYC} -eq 1 ] || [ ${SFC_CYC} -eq 2 ] ; then  # cycle surface fields
               print_info_msg "Warning: cannot do surface cycle in cold start with sudomain restart files"
             fi
           else
-            if [ "${IO_LAYOUT_Y}" == "1" ]; then 
+            if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
               cp_vrfy ${checkfile}  ${restart_prefix_find}sfc_data.nc
               mv sfc_data.nc gfsice.sfc_data.nc
               mv ${restart_prefix_find}sfc_data.nc sfc_data.nc
@@ -604,7 +612,7 @@ if [ ${HH} -eq ${GVF_update_hour} ] && [ ${cycle_type} == "spinup" ]; then
       ln_vrfy -sf ${FIX_GSI}/gvf_VIIRS_4KM.MAX.1gd4r.new  gvf_VIIRS_4KM.MAX.1gd4r.new
       ln_vrfy -sf ${FIX_GSI}/gvf_VIIRS_4KM.MIN.1gd4r.new  gvf_VIIRS_4KM.MIN.1gd4r.new
 
-      if [ "${IO_LAYOUT_Y}" == "1" ]; then
+      if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
         ln_vrfy -sf ${FIX_GSI}/${PREDEF_GRID_NAME}/fv3_grid_spec  fv3_grid_spec
         ${EXECDIR}/update_GVF.exe > stdout_updateGVF 2>&1
       else
@@ -739,7 +747,7 @@ EOF
      Copying the surface surgery executable to the run directory..."
      cp_vrfy ${EXECDIR}/${exect} ${exect}
 
-     if [ "${IO_LAYOUT_Y}" == "1" ]; then
+     if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
        ln_vrfy -sf ${FIX_GSI}/${PREDEF_GRID_NAME}/fv3_grid_spec  fv3_grid_spec
        ./${exect} > sfc_sugery_stdout 2>&1 || print_info_msg "\
        Call to executable to run surface surgery returned with nonzero exit code."
@@ -828,7 +836,7 @@ Please ensure that you've built this executable."
     fi
 
 #
-    ${APRUN} ./${fvcom_exec_fn} ${surface_file} fvcom.nc ${FVCOM_WCSTART} ${fvcom_time} ${IO_LAYOUT_Y} || \
+    ${APRUN} ./${fvcom_exec_fn} ${surface_file} fvcom.nc ${FVCOM_WCSTART} ${fvcom_time} ${IO_LAYOUT_Y_IN} || \
     print_err_msg_exit "\
 Call to executable (fvcom_exe) to modify sfc fields for FV3-LAM failed:
   fvcom_exe = \"${fvcom_exec_fn}\"

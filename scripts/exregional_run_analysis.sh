@@ -92,6 +92,7 @@ case $MACHINE in
   ulimit -s unlimited
   ulimit -a
   APRUN="mpirun -l"
+  IO_LAYOUT_Y_IN=${IO_LAYOUT_Y}
   ;;
 #
 "THEIA")
@@ -100,6 +101,7 @@ case $MACHINE in
   ulimit -a
   np=${SLURM_NTASKS}
   APRUN="mpirun"
+  IO_LAYOUT_Y_IN=${IO_LAYOUT_Y}
   ;;
 #
 "HERA")
@@ -108,6 +110,7 @@ case $MACHINE in
   export OMP_NUM_THREADS=1
   export OMP_STACKSIZE=300M
   APRUN="srun"
+  IO_LAYOUT_Y_IN=${IO_LAYOUT_Y}
   ;;
 #
 "ORION")
@@ -116,6 +119,7 @@ case $MACHINE in
   export OMP_NUM_THREADS=1
   export OMP_STACKSIZE=1024M
   APRUN="srun"
+  IO_LAYOUT_Y_IN=1
   ;;
 #
 "JET")
@@ -124,6 +128,7 @@ case $MACHINE in
   ulimit -s unlimited
   ulimit -a
   APRUN="srun"
+  IO_LAYOUT_Y_IN=${IO_LAYOUT_Y}
   ;;
 #
 "ODIN")
@@ -133,6 +138,7 @@ case $MACHINE in
   ulimit -s unlimited
   ulimit -a
   APRUN="srun"
+  IO_LAYOUT_Y_IN=${IO_LAYOUT_Y}
   ;;
 #
 esac
@@ -365,7 +371,7 @@ fi
 #           radar_tten converting code.
 #-----------------------------------------------------------------------
 
-n_iolayouty=$(($IO_LAYOUT_Y-1))
+n_iolayouty=$(($IO_LAYOUT_Y_IN-1))
 list_iolayout=$(seq 0 $n_iolayouty)
 
 ln_vrfy -snf ${fixgriddir}/fv3_akbk                     fv3_akbk
@@ -381,7 +387,7 @@ if [ ${BKTYPE} -eq 1 ]; then  # cold start uses background from INPUT
 
   fv3lam_bg_type=1
 else                          # cycle uses background from restart
-  if [ "${IO_LAYOUT_Y}" == "1" ]; then
+  if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
     ln_vrfy  -snf ${bkpath}/fv_core.res.tile1.nc             fv3_dynvars
     ln_vrfy  -snf ${bkpath}/fv_tracer.res.tile1.nc           fv3_tracer
     ln_vrfy  -snf ${bkpath}/sfc_data.nc                      fv3_sfcdata
@@ -750,7 +756,7 @@ fi
 if [ ${BKTYPE} -eq 1 ]; then
   n_iolayouty=1
 else
-  n_iolayouty=$(($IO_LAYOUT_Y))
+  n_iolayouty=$(($IO_LAYOUT_Y_IN))
 fi
 
 . ${FIX_GSI}/gsiparm.anl.sh
@@ -956,7 +962,7 @@ fi
 #
 if [ ${BKTYPE} -eq 0 ] && [ "${DO_SOIL_ADJUST}" = "TRUE" ]; then  # warm start
   cd ${bkpath}
-  if [ "${IO_LAYOUT_Y}" == "1" ]; then
+  if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
     ln_vrfy -snf ${fixgriddir}/fv3_grid_spec                fv3_grid_spec
   else
     for ii in ${list_iolayout}
@@ -968,7 +974,7 @@ if [ ${BKTYPE} -eq 0 ] && [ "${DO_SOIL_ADJUST}" = "TRUE" ]; then  # warm start
 
 cat << EOF > namelist.soiltq
  &setup
-  fv3_io_layout_y=${IO_LAYOUT_Y},
+  fv3_io_layout_y=${IO_LAYOUT_Y_IN},
   iyear=${YYYY},
   imonth=${MM},
   iday=${DD},
@@ -1007,7 +1013,7 @@ if [ ${BKTYPE} -eq 0 ] && [ "${DO_UPDATE_BC}" = "TRUE" ]; then  # warm start
 
 cat << EOF > namelist.updatebc
  &setup
-  fv3_io_layout_y=${IO_LAYOUT_Y},
+  fv3_io_layout_y=${IO_LAYOUT_Y_IN},
   bdy_update_type=1,
   grid_type_fv3_regional=2,
  /

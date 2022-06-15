@@ -87,30 +87,35 @@ case $MACHINE in
   ulimit -s unlimited
   ulimit -a
   APRUN="mpirun -l -np 1"
+  IO_LAYOUT_Y_IN=${IO_LAYOUT_Y}
   ;;
 #
 "WCOSS_DELL_P3")
   ulimit -s unlimited
   ulimit -a
   APRUN="mpirun -l -np ${IO_LAYOUT_Y}"
+  IO_LAYOUT_Y_IN=${IO_LAYOUT_Y}
   ;;
 #
 "HERA")
   ulimit -s unlimited
   ulimit -a
   APRUN="srun"
+  IO_LAYOUT_Y_IN=${IO_LAYOUT_Y}
   ;;
 #
 "JET")
   ulimit -s unlimited
   ulimit -a
   APRUN="srun"
+  IO_LAYOUT_Y_IN=${IO_LAYOUT_Y}
   ;;
 #
 "ORION")
   ulimit -s unlimited
   ulimit -a
   APRUN="srun"
+  IO_LAYOUT_Y_IN=1
   ;;
 #
 "ODIN")
@@ -120,6 +125,7 @@ case $MACHINE in
   ulimit -s unlimited
   ulimit -a
   APRUN="srun -n 1"
+  IO_LAYOUT_Y_IN=${IO_LAYOUT_Y}
   ;;
 #
 esac
@@ -175,14 +181,14 @@ else
     bkpath=${cycle_dir}${slash_ensmem_subdir}/fcst_fv3lam${cycle_tag}/INPUT
 fi
 
-n_iolayouty=$(($IO_LAYOUT_Y-1))
+n_iolayouty=$(($IO_LAYOUT_Y_IN-1))
 list_iolayout=$(seq 0 $n_iolayouty)
 
 cp_vrfy ${fixgriddir}/fv3_akbk                               fv3_akbk
 cp_vrfy ${fixgriddir}/fv3_grid_spec                          fv3_grid_spec
 
 if [ -r "${bkpath}/coupler.res" ]; then # Use background from warm restart
-  if [ "${IO_LAYOUT_Y}" == "1" ]; then
+  if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
     ln_vrfy -s ${bkpath}/fv_core.res.tile1.nc         fv3_dynvars
     ln_vrfy -s ${bkpath}/fv_tracer.res.tile1.nc       fv3_tracer
     ln_vrfy -s ${bkpath}/sfc_data.nc                  fv3_sfcdata
@@ -240,7 +246,7 @@ ss=0
 for bigmin in 0; do
   bigmin=$( printf %2.2i $bigmin )
   obs_file=${process_radarref_path}/${bigmin}/RefInGSI3D.dat
-  if [ "${IO_LAYOUT_Y}" == "1" ]; then
+  if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
     obs_file_check=${obs_file}
   else
     obs_file_check=${obs_file}.0000
@@ -248,7 +254,7 @@ for bigmin in 0; do
   ((ss+=1))
   num=$( printf %2.2i ${ss} )
   if [ -r "${obs_file_check}" ]; then
-     if [ "${IO_LAYOUT_Y}" == "1" ]; then
+     if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
        cp_vrfy "${obs_file}" "RefInGSI3D.dat_${num}"
      else
        for ii in ${list_iolayout}
@@ -271,7 +277,7 @@ done
 if [ ${BKTYPE} -eq 1 ]; then
   n_iolayouty=1
 else
-  n_iolayouty=$(($IO_LAYOUT_Y))
+  n_iolayouty=$(($IO_LAYOUT_Y_IN))
 fi
 
 cat << EOF > gsiparm.anl
