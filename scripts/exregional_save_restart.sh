@@ -155,13 +155,16 @@ if [ ! -r ${nwges_dir}/INPUT/gfs_ctrl.nc ]; then
 fi
 if [ -r "$run_dir/RESTART/${restart_prefix}.coupler.res" ]; then
   if [ "${DO_IO_COMBINE}" == "TRUE" ] && [ "${IO_LAYOUT_Y}" != "1" ]; then
-    ${EXECDIR}/mppnccombine -64 $run_dir/RESTART/${restart_prefix}.fv_core.res.tile1.nc    $run_dir/RESTART/${restart_prefix}.fv_core.res.tile1.nc.????
-    ${EXECDIR}/mppnccombine -64 $run_dir/RESTART/${restart_prefix}.fv_srf_wnd.res.tile1.nc $run_dir/RESTART/${restart_prefix}.fv_srf_wnd.res.tile1.nc.????
-    ${EXECDIR}/mppnccombine -64 $run_dir/RESTART/${restart_prefix}.fv_tracer.res.tile1.nc  $run_dir/RESTART/${restart_prefix}.fv_tracer.res.tile1.nc.????
-    if [ "${USE_IO_NETCDF}" == "FALSE" ]; then
-      ${EXECDIR}/mppnccombine -64 $run_dir/RESTART/${restart_prefix}.phy_data.nc $run_dir/RESTART/${restart_prefix}.phy_data.nc.????
-      ${EXECDIR}/mppnccombine -64 $run_dir/RESTART/${restart_prefix}.sfc_data.nc $run_dir/RESTART/${restart_prefix}.sfc_data.nc.????
+    if [ "${USE_IO_NETCDF}" == "TRUE" ]; then
+      filelistnn="fv_core.res.tile1.nc fv_srf_wnd.res.tile1.nc fv_tracer.res.tile1.nc"
+    else
+      filelistnn=${filelistn}
     fi
+    for file in ${filelistnn}; do
+      ${EXECDIR}/mppnccombine -v -n4 -r $run_dir/RESTART/${restart_prefix}.${file}_tmp $run_dir/RESTART/${restart_prefix}.${file}.????
+      nccopy -4 $run_dir/RESTART/${restart_prefix}.${file}_tmp $run_dir/RESTART/${restart_prefix}.${file}
+      rm -f $run_dir/RESTART/${restart_prefix}.${file}_tmp
+    done
   fi
   for file in ${filelist}; do
     mv_vrfy $run_dir/RESTART/${restart_prefix}.${file} ${nwges_dir}/RESTART/${restart_prefix}.${file}
@@ -197,13 +200,16 @@ else
 
   if [ -r "$run_dir/RESTART/coupler.res" ] && [ ${fhr} -eq ${FCST_LEN_HRS_thiscycle} ] ; then
     if [ "${DO_IO_COMBINE}" == "TRUE" ] && [ "${IO_LAYOUT_Y}" != "1" ]; then
-      ${EXECDIR}/mppnccombine -64 $run_dir/RESTART/fv_core.res.tile1.nc    $run_dir/RESTART/fv_core.res.tile1.nc.????
-      ${EXECDIR}/mppnccombine -64 $run_dir/RESTART/fv_srf_wnd.res.tile1.nc $run_dir/RESTART/fv_srf_wnd.res.tile1.nc.????
-      ${EXECDIR}/mppnccombine -64 $run_dir/RESTART/fv_tracer.res.tile1.nc  $run_dir/RESTART/fv_tracer.res.tile1.nc.????
-      if [ "${USE_IO_NETCDF}" == "FALSE" ]; then
-        ${EXECDIR}/mppnccombine -64 $run_dir/RESTART/phy_data.nc $run_dir/RESTART/phy_data.nc.????
-        ${EXECDIR}/mppnccombine -64 $run_dir/RESTART/sfc_data.nc $run_dir/RESTART/sfc_data.nc.????
+      if [ "${USE_IO_NETCDF}" == "TRUE" ]; then
+        filelistnn="fv_core.res.tile1.nc fv_srf_wnd.res.tile1.nc fv_tracer.res.tile1.nc"
+      else
+        filelistnn=${filelistn}
       fi
+      for file in ${filelistnn}; do
+        ${EXECDIR}/mppnccombine -v -n4 -r $run_dir/RESTART/${file}_tmp $run_dir/RESTART/${file}.????
+        nccopy -4 $run_dir/RESTART/${file}_tmp $run_dir/RESTART/${file}
+        rm -f $run_dir/RESTART/${file}_tmp
+      done
     fi
     for file in ${filelist}; do
        mv_vrfy $run_dir/RESTART/${file} ${nwges_dir}/RESTART/${restart_prefix}.${file}
