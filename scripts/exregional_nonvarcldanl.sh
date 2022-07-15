@@ -55,7 +55,7 @@ with FV3 for the specified cycle.
 #
 #-----------------------------------------------------------------------
 #
-valid_args=( "cycle_dir" "cycle_type" "mem_type" "workdir" "slash_ensmem_subdir" )
+valid_args=( "cycle_dir" "cycle_type" "gridspec_dir" "mem_type" "workdir" "slash_ensmem_subdir" )
 process_args valid_args "$@"
 #
 #-----------------------------------------------------------------------
@@ -199,7 +199,7 @@ if [ -r "${bkpath}/coupler.res" ]; then # Use background from warm restart
       ln_vrfy -s ${bkpath}/fv_core.res.tile1.nc.${iii}         fv3_dynvars.${iii}
       ln_vrfy -s ${bkpath}/fv_tracer.res.tile1.nc.${iii}       fv3_tracer.${iii}
       ln_vrfy -s ${bkpath}/sfc_data.nc.${iii}                  fv3_sfcdata.${iii}
-      ln_vrfy -s ${fixgriddir}/fv3_grid_spec.${iii}            fv3_grid_spec.${iii}
+      ln_vrfy -s ${gridspec_dir}/fv3_grid_spec.${iii}          fv3_grid_spec.${iii}
     done
   fi
   BKTYPE=0
@@ -279,6 +279,12 @@ if [ ${BKTYPE} -eq 1 ]; then
 else
   n_iolayouty=$(($IO_LAYOUT_Y_IN))
 fi
+if [ ${DO_ENKF_RADAR_REF} == "TRUE" ]; then
+  l_qnr_from_qr=".true."
+fi
+if [ ${DO_ENVAR_RADAR_REF} == "TRUE" ]; then
+  l_qnr_from_qr=".true."
+fi
 
 cat << EOF > gsiparm.anl
 
@@ -313,6 +319,8 @@ cat << EOF > gsiparm.anl
    i_lightpcp=1,
    i_gsdqc=2,
    l_saturate_bkCloud=.true.,
+   l_qnr_from_qr=${l_qnr_from_qr},
+   n0_rain=100000000.0
  /
 EOF
 

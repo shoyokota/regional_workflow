@@ -55,7 +55,9 @@ specified cycle.
 #
 #-----------------------------------------------------------------------
 #
-valid_args=( "cycle_dir" "cycle_type" "gsi_type" "mem_type" "analworkdir" "observer_nwges_dir" "slash_ensmem_subdir" "comout" "rrfse_fg_root" "satbias_dir" )
+valid_args=( "cycle_dir" "cycle_type" "gsi_type" "mem_type" "analworkdir" \
+             "observer_nwges_dir" "slash_ensmem_subdir" "comout" \
+             "rrfse_fg_root" "satbias_dir" "ob_type" "gridspec_dir" )
 process_args valid_args "$@"
 #
 #-----------------------------------------------------------------------
@@ -228,12 +230,14 @@ if  [[ ${regional_ensemble_option:-1} -eq 5 ]]; then
 
     dynvarfile=${bkpathmem}/${restart_prefix}fv_core.res.tile1.nc
     tracerfile=${bkpathmem}/${restart_prefix}fv_tracer.res.tile1.nc
-    if [ -r "${dynvarfile}" ] && [ -r "${tracerfile}" ] ; then
-      ln_vrfy -snf ${bkpathmem}/${restart_prefix}fv_core.res.tile1.nc       fv3SAR${ens_nstarthr}_ens_mem${memcharv0}-fv3_dynvars 
-      ln_vrfy -snf ${bkpathmem}/${restart_prefix}fv_tracer.res.tile1.nc     fv3SAR${ens_nstarthr}_ens_mem${memcharv0}-fv3_tracer 
+    phyvarfile=${bkpathmem}/${restart_prefix}phy_data.nc
+    if [ -r "${dynvarfile}" ] && [ -r "${tracerfile}" ] && [ -r "${phyvarfile}" ] ; then
+      ln_vrfy -snf ${bkpathmem}/${restart_prefix}fv_core.res.tile1.nc       fv3SAR${ens_nstarthr}_ens_mem${memcharv0}-fv3_dynvars
+      ln_vrfy -snf ${bkpathmem}/${restart_prefix}fv_tracer.res.tile1.nc     fv3SAR${ens_nstarthr}_ens_mem${memcharv0}-fv3_tracer
+      ln_vrfy -snf ${bkpathmem}/${restart_prefix}phy_data.nc                fv3SAR${ens_nstarthr}_ens_mem${memcharv0}-fv3_phyvars
       (( ifound += 1 ))
     else
-      print_info_msg "Error: cannot find ensemble files: ${dynvarfile} ${tracerfile} "
+      print_info_msg "Error: cannot find ensemble files: ${dynvarfile} ${tracerfile} ${phyvarfile} "
     fi
     (( imem += 1 ))
   done
@@ -289,7 +293,7 @@ if  [[ ${regional_ensemble_option:-1} -eq 1 ]]; then #using GDAS
     fi
 
     ;;
-  "JET" | "HERA" | "ORION")
+  "JET" | "HERA" | "ORION" )
 
     for loop in $loops; do
       for timelist in $(ls ${ENKF_FCST}/*.gdas.t*z.atmf${loop}.mem080.${ftype}); do
@@ -336,8 +340,11 @@ ifsatbufr=.false.
 ifsoilnudge=.false.
 ifhyb=.false.
 miter=2
+niter1=50
+niter2=50
 lread_obs_save=.false.
 lread_obs_skip=.false.
+if_model_dbz=.false.
 
 # Determine if hybrid option is available
 memname='atmf009'
@@ -347,6 +354,12 @@ if [ ${regional_ensemble_option:-1} -eq 5 ]  && [ ${BKTYPE} != 1  ]; then
   print_info_msg "$VERBOSE" "Do hybrid with FV3LAM ensemble"
   ifhyb=.true.
   print_info_msg "$VERBOSE" " Cycle ${YYYYMMDDHH}: GSI hybrid uses FV3LAM ensemble with n_ens=${nummem}" 
+  if [ ${ob_type} == "conv" ]; then
+    grid_ratio_ens="3"
+  fi
+  if [ ${ob_type} == "radardbz" ]; then
+    grid_ratio_ens="1"
+  fi
 else    
   nummem=$(more filelist03 | wc -l)
   nummem=$((nummem - 3 ))
@@ -391,6 +404,7 @@ else                          # cycle uses background from restart
     ln_vrfy  -snf ${bkpath}/fv_core.res.tile1.nc             fv3_dynvars
     ln_vrfy  -snf ${bkpath}/fv_tracer.res.tile1.nc           fv3_tracer
     ln_vrfy  -snf ${bkpath}/sfc_data.nc                      fv3_sfcdata
+    ln_vrfy  -snf ${bkpath}/phy_data.nc                      fv3_phyvars
   else
     for ii in ${list_iolayout}
     do
@@ -398,7 +412,8 @@ else                          # cycle uses background from restart
       ln_vrfy  -snf ${bkpath}/fv_core.res.tile1.nc.${iii}     fv3_dynvars.${iii}
       ln_vrfy  -snf ${bkpath}/fv_tracer.res.tile1.nc.${iii}   fv3_tracer.${iii}
       ln_vrfy  -snf ${bkpath}/sfc_data.nc.${iii}              fv3_sfcdata.${iii}
-      ln_vrfy  -snf ${fixgriddir}/fv3_grid_spec.${iii}        fv3_grid_spec.${iii}
+      ln_vrfy  -snf ${bkpath}/phy_data.nc.${iii}              fv3_phyvars.${iii}
+      ln_vrfy  -snf ${gridspec_dir}/fv3_grid_spec.${iii}      fv3_grid_spec.${iii}
     done
   fi
   fv3lam_bg_type=0
@@ -427,7 +442,7 @@ if [[ "${NET}" = "RTMA"* ]]; then
 else
   SUBH=""
   obs_source=rap
-  if [[ ${HH} -eq '00' || ${HH} -eq '12' ]]; then
+  if [ ${HH} -eq '00' ] || [ ${HH} -eq '12' ]; then
     obs_source=rap_e
   fi
 
@@ -453,17 +468,35 @@ else
   esac
 fi
 
+if [[ ${gsi_type} == "OBSERVER" || ${ob_type} == "conv" ]]; then
 
-obs_files_source[0]=${obspath_tmp}/${obsfileprefix}.t${HH}${SUBH}z.prepbufr.tm00
-obs_files_target[0]=prepbufr
+  obs_files_source[0]=${obspath_tmp}/${obsfileprefix}.t${HH}${SUBH}z.prepbufr.tm00
+  obs_files_target[0]=prepbufr
 
-obs_number=${#obs_files_source[@]}
-obs_files_source[${obs_number}]=${obspath_tmp}/${obsfileprefix}.t${HH}${SUBH}z.satwnd.tm00.bufr_d
-obs_files_target[${obs_number}]=satwndbufr
+  obs_number=${#obs_files_source[@]}
+  obs_files_source[${obs_number}]=${obspath_tmp}/${obsfileprefix}.t${HH}${SUBH}z.satwnd.tm00.bufr_d
+  obs_files_target[${obs_number}]=satwndbufr
 
-obs_number=${#obs_files_source[@]}
-obs_files_source[${obs_number}]=${obspath_tmp}/${obsfileprefix}.t${HH}${SUBH}z.nexrad.tm00.bufr_d
-obs_files_target[${obs_number}]=l2rwbufr
+  obs_number=${#obs_files_source[@]}
+  obs_files_source[${obs_number}]=${obspath_tmp}/${obsfileprefix}.t${HH}${SUBH}z.nexrad.tm00.bufr_d
+  obs_files_target[${obs_number}]=l2rwbufr
+
+  if [ ${DO_ENKF_RADAR_REF} == "TRUE" ]; then
+    obs_number=${#obs_files_source[@]}
+    obs_files_source[${obs_number}]=${cycle_dir}/process_radarref/00/Gridded_ref.nc
+    obs_files_target[${obs_number}]=dbzobs.nc
+  fi
+
+else
+
+  if [ ${ob_type} == "radardbz" ]; then
+
+    obs_files_source[0]=${cycle_dir}/process_radarref/00/Gridded_ref.nc
+    obs_files_target[0]=dbzobs.nc
+
+  fi
+
+fi
 
 #
 #-----------------------------------------------------------------------
@@ -570,6 +603,27 @@ done
 #-----------------------------------------------------------------------
 
 ANAVINFO=${FIX_GSI}/${ANAVINFO_FN}
+if [ ${DO_ENKF_RADAR_REF} == "TRUE" ]; then
+  ANAVINFO=${FIX_GSI}/${ANAVINFO_DBZ_FN}
+  diag_radardbz=.true.
+  beta1_inv=0.0
+  if_model_dbz=.true.
+fi
+if [[ ${gsi_type} == "ANALYSIS" && ${ob_type} == "radardbz" ]]; then
+  ANAVINFO=${FIX_GSI}/${ENKF_ANAVINFO_DBZ_FN}
+  miter=1
+  niter1=100
+  niter2=0
+  bkgerr_vs=0.1
+  bkgerr_hzscl="0.4,0.5,0.6"
+  beta1_inv=0.0
+  ens_h=4.10790
+  ens_v=-0.30125
+  readin_localization=.false.
+  q_hyb_ens=.true.
+  ens_fast_read=.true.
+  if_model_dbz=.true.
+fi
 CONVINFO=${FIX_GSI}/${CONVINFO_FN}
 HYBENSINFO=${FIX_GSI}/${HYBENSINFO_FN}
 OBERROR=${FIX_GSI}/${OBERROR_FN}
@@ -709,15 +763,15 @@ if [ ${DO_RADDA} == "TRUE" ]; then
   ## if satbias files (go back to previous 10 dyas) are not available from ${satbias_dir}, use satbias files from the ${FIX_GSI} 
   if [ $satcounter -eq $maxcounter ]; then
     if [ -r ${FIX_GSI}/rrfs.gdas_satbias ]; then
-      echo "using satllite gdas satbias_in files from ${FIX_GSI}"     
+      echo "using satllite gdas satbias_in files from ${FIX_GSI}"
       cp_vrfy ${FIX_GSI}/rrfs.gdas_satbias ./satbias_in
     fi
     if [ -r ${FIX_GSI}/rrfs.gdas_satbias_pc ]; then
-      echo "using satllite gdas satbias_pc files from ${FIX_GSI}"     
+      echo "using satllite gdas satbias_pc files from ${FIX_GSI}"
       cp_vrfy ${FIX_GSI}/rrfs.gdas_satbias_pc ./satbias_pc
     fi
     if [ -r ${FIX_GSI}/rrfs.gdas_radstat ]; then
-      echo "using netcdf satllite radstat files from ${FIX_GSI}"     
+      echo "using netcdf satllite radstat files from ${FIX_GSI}"
       cp_vrfy ${FIX_GSI}/rrfs.gdas_radstat ./radstat.rrfs
     fi
   fi
@@ -859,7 +913,7 @@ numfile_rad_bin=0
 numfile_cnv=0
 numfile_rad=0
 if [ $binary_diag = ".true." ]; then
-   listall="hirs2_n14 msu_n14 sndr_g08 sndr_g11 sndr_g11 sndr_g12 sndr_g13 sndr_g08_prep sndr_g11_prep sndr_g12_prep sndr_g13_prep sndrd1_g11 sndrd2_g11 sndrd3_g11 sndrd4_g11 sndrd1_g15 sndrd2_g15 sndrd3_g15 sndrd4_g15 sndrd1_g13 sndrd2_g13 sndrd3_g13 sndrd4_g13 hirs3_n15 hirs3_n16 hirs3_n17 amsua_n15 amsua_n16 amsua_n17 amsua_n18 amsua_n19 amsua_metop-a amsua_metop-b amsua_metop-c amsub_n15 amsub_n16 amsub_n17 hsb_aqua airs_aqua amsua_aqua imgr_g08 imgr_g11 imgr_g12 pcp_ssmi_dmsp pcp_tmi_trmm conv sbuv2_n16 sbuv2_n17 sbuv2_n18 omi_aura ssmi_f13 ssmi_f14 ssmi_f15 hirs4_n18 hirs4_metop-a mhs_n18 mhs_n19 mhs_metop-a mhs_metop-b mhs_metop-c amsre_low_aqua amsre_mid_aqua amsre_hig_aqua ssmis_las_f16 ssmis_uas_f16 ssmis_img_f16 ssmis_env_f16 iasi_metop-a iasi_metop-b iasi_metop-c seviri_m08 seviri_m09 seviri_m10 seviri_m11 cris_npp atms_npp ssmis_f17 cris-fsr_npp cris-fsr_n20 atms_n20 abi_g16 abi_g17"
+   listall="hirs2_n14 msu_n14 sndr_g08 sndr_g11 sndr_g11 sndr_g12 sndr_g13 sndr_g08_prep sndr_g11_prep sndr_g12_prep sndr_g13_prep sndrd1_g11 sndrd2_g11 sndrd3_g11 sndrd4_g11 sndrd1_g15 sndrd2_g15 sndrd3_g15 sndrd4_g15 sndrd1_g13 sndrd2_g13 sndrd3_g13 sndrd4_g13 hirs3_n15 hirs3_n16 hirs3_n17 amsua_n15 amsua_n16 amsua_n17 amsua_n18 amsua_n19 amsua_metop-a amsua_metop-b amsua_metop-c amsub_n15 amsub_n16 amsub_n17 hsb_aqua airs_aqua amsua_aqua imgr_g08 imgr_g11 imgr_g12 pcp_ssmi_dmsp pcp_tmi_trmm conv sbuv2_n16 sbuv2_n17 sbuv2_n18 omi_aura ssmi_f13 ssmi_f14 ssmi_f15 hirs4_n18 hirs4_metop-a mhs_n18 mhs_n19 mhs_metop-a mhs_metop-b mhs_metop-c amsre_low_aqua amsre_mid_aqua amsre_hig_aqua ssmis_las_f16 ssmis_uas_f16 ssmis_img_f16 ssmis_env_f16 iasi_metop-a iasi_metop-b iasi_metop-c seviri_m08 seviri_m09 seviri_m10 seviri_m11 cris_npp atms_npp ssmis_f17 cris-fsr_npp cris-fsr_n20 atms_n20 abi_g16 abi_g17 radardbz"
    for type in $listall; do
       count=$(ls pe*.${type}_${loop} | wc -l)
       if [[ $count -gt 0 ]]; then
@@ -871,7 +925,7 @@ if [ $binary_diag = ".true." ]; then
 fi
 
 if [ $netcdf_diag = ".true." ]; then
-   listall_cnv="conv_ps conv_q conv_t conv_uv conv_pw conv_rw conv_sst"
+   listall_cnv="conv_ps conv_q conv_t conv_uv conv_pw conv_rw conv_sst radardbz"
    listall_rad="hirs2_n14 msu_n14 sndr_g08 sndr_g11 sndr_g11 sndr_g12 sndr_g13 sndr_g08_prep sndr_g11_prep sndr_g12_prep sndr_g13_prep sndrd1_g11 sndrd2_g11 sndrd3_g11 sndrd4_g11 sndrd1_g15 sndrd2_g15 sndrd3_g15 sndrd4_g15 sndrd1_g13 sndrd2_g13 sndrd3_g13 sndrd4_g13 hirs3_n15 hirs3_n16 hirs3_n17 amsua_n15 amsua_n16 amsua_n17 amsua_n18 amsua_n19 amsua_metop-a amsua_metop-b amsua_metop-c amsub_n15 amsub_n16 amsub_n17 hsb_aqua airs_aqua amsua_aqua imgr_g08 imgr_g11 imgr_g12 pcp_ssmi_dmsp pcp_tmi_trmm conv sbuv2_n16 sbuv2_n17 sbuv2_n18 omi_aura ssmi_f13 ssmi_f14 ssmi_f15 hirs4_n18 hirs4_metop-a mhs_n18 mhs_n19 mhs_metop-a mhs_metop-b mhs_metop-c amsre_low_aqua amsre_mid_aqua amsre_hig_aqua ssmis_las_f16 ssmis_uas_f16 ssmis_img_f16 ssmis_env_f16 iasi_metop-a iasi_metop-b iasi_metop-c seviri_m08 seviri_m09 seviri_m10 seviri_m11 cris_npp atms_npp ssmis_f17 cris-fsr_npp cris-fsr_n20 atms_n20 abi_g16"
 
    cat_exec="${EXECDIR}/nc_diag_cat.x"
@@ -960,7 +1014,7 @@ fi
 #
 #-----------------------------------------------------------------------
 #
-if [ ${BKTYPE} -eq 0 ] && [ "${DO_SOIL_ADJUST}" = "TRUE" ]; then  # warm start
+if [ ${BKTYPE} -eq 0 ] && [ ${ob_type} == "conv" ] && [ "${DO_SOIL_ADJUST}" = "TRUE" ]; then  # warm start
   cd ${bkpath}
   if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
     ln_vrfy -snf ${fixgriddir}/fv3_grid_spec                fv3_grid_spec
@@ -968,7 +1022,7 @@ if [ ${BKTYPE} -eq 0 ] && [ "${DO_SOIL_ADJUST}" = "TRUE" ]; then  # warm start
     for ii in ${list_iolayout}
     do
       iii=`printf %4.4i $ii`
-      ln_vrfy  -snf ${fixgriddir}/fv3_grid_spec.${iii}        fv3_grid_spec.${iii}
+      ln_vrfy  -snf ${gridspec_dir}/fv3_grid_spec.${iii}    fv3_grid_spec.${iii}
     done
   fi
 

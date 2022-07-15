@@ -55,7 +55,7 @@ with FV3 for the specified cycle.
 #
 #-----------------------------------------------------------------------
 #
-valid_args=( "CYCLE_DIR" "cycle_type" "WORKDIR" "RADAR_REF_THINNING")
+valid_args=( "CYCLE_DIR" "cycle_type" "gridspec_dir" "WORKDIR" "RADAR_REF_THINNING")
 process_args valid_args "$@"
 #
 #-----------------------------------------------------------------------
@@ -215,7 +215,7 @@ for bigmin in ${RADARREFL_TIMELEVEL[@]}; do
       for ii in $list_iolayout
       do
         iii=$(printf %4.4i $ii)
-        cp_vrfy ${fixgriddir}/fv3_grid_spec.${iii}   fv3sar_grid_spec.nc.${iii}
+        cp_vrfy ${gridspec_dir}/fv3_grid_spec.${iii}   fv3sar_grid_spec.nc.${iii}
       done
     fi
   fi

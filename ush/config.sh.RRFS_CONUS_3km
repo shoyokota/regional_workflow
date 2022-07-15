@@ -166,6 +166,7 @@ TAG="RRFS_CONUS_3km"
 
 USE_CUSTOM_POST_CONFIG_FILE="TRUE"
 TESTBED_FIELDS_FN="testbed_fields_bgdawp.txt"
+TESTBED_FIELDS_FN2="testbed_fields_bgrd3d.txt"
 CUSTOM_POST_CONFIG_FP="$(cd "$( dirname "${BASH_SOURCE[0]}" )/.." &>/dev/null&&pwd)/fix/upp/postxconfig-NT-fv3lam_rrfs.txt"
 CUSTOM_POST_PARAMS_FP="$(cd "$( dirname "${BASH_SOURCE[0]}" )/.." &>/dev/null&&pwd)/fix/upp/params_grib2_tbl_new"
 ARCHIVEDIR="/1year/BMC/wrfruc/rrfs_dev1"
@@ -193,6 +194,13 @@ if [[ $MACHINE == "wcoss_dell_p3" ]] ; then
   PPN_RUN_POST="28"
   FV3GFS_FILE_FMT_ICS="netcdf"
   FV3GFS_FILE_FMT_LBCS="netcdf"
+fi
+
+if [[ $MACHINE == "orion" ]] ; then
+  LAYOUT_X="30"
+  LAYOUT_Y="40"
+  PPN_RUN_FCST="40"
+  WTIME_RUN_WGRIB2="00:20:00"
 fi
 
 RUN="RRFS_conus_3km"

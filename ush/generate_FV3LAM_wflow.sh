@@ -244,6 +244,7 @@ settings="\
   'nnodes_run_ref2tten': ${NNODES_RUN_REF2TTEN}
   'nnodes_run_nonvarcldanl': ${NNODES_RUN_NONVARCLDANL}
   'nnodes_run_graphics': ${NNODES_RUN_GRAPHICS}
+  'nnodes_run_enspost': ${NNODES_RUN_ENSPOST}
   'nnodes_run_bufrsnd': ${NNODES_RUN_BUFRSND}
   'nnodes_save_restart': ${NNODES_SAVE_RESTART}
 #
@@ -280,6 +281,7 @@ settings="\
   'ppn_run_ref2tten': ${PPN_RUN_REF2TTEN}
   'ppn_run_nonvarcldanl': ${PPN_RUN_NONVARCLDANL}
   'ppn_run_graphics': ${PPN_RUN_GRAPHICS}
+  'ppn_run_enspost': ${PPN_RUN_ENSPOST}
   'ppn_run_bufrsnd': ${PPN_RUN_BUFRSND}
   'ppn_save_restart': ${PPN_SAVE_RESTART}
 #
@@ -299,6 +301,7 @@ settings="\
   'wtime_run_enkf': ${WTIME_RUN_ENKF}
   'wtime_run_recenter': ${WTIME_RUN_RECENTER}
   'wtime_run_post': ${WTIME_RUN_POST}
+  'wtime_run_enspost': ${WTIME_RUN_ENSPOST}
   'wtime_run_wgrib2': ${WTIME_RUN_WGRIB2}
   'wtime_proc_radar': ${WTIME_PROC_RADAR}
   'wtime_proc_lightning': ${WTIME_PROC_LIGHTNING}
@@ -434,9 +437,12 @@ settings="\
   'do_enscontrol': ${DO_ENSCONTROL}
   'do_gsiobserver': ${DO_GSIOBSERVER}
   'do_enkfupdate': ${DO_ENKFUPDATE}
+  'do_enkf_radar_ref': ${DO_ENKF_RADAR_REF}
+  'do_envar_radar_ref': ${DO_ENVAR_RADAR_REF}
   'do_recenter': ${DO_RECENTER}
   'do_bufrsnd': ${DO_BUFRSND}
   'do_ens_graphics': ${DO_ENS_GRAPHICS}
+  'do_enspost': ${DO_ENSPOST}
 #
 # data assimilation related parameters.
 #
@@ -607,6 +613,20 @@ if [ "${RUN_ENVIR}" = "nco" ]; then
     Missing link to FIXcrtm
     RUN_ENVIR = \"${RUN_ENVIR}\"
     FIXcrtm = \"$FIXcrtm\"
+    path_resolved = \"${path_resolved}\"
+    Please ensure that path_resolved is an existing directory and then rerun
+    the experiment generation script."
+    fi
+
+# Resolve the target directory that the FIXuppcrtm symlink points to
+    ln_vrfy -fsn "$FIX_UPP_CRTM" "$FIXuppcrtm"
+
+    path_resolved=$( readlink -m "$FIXuppcrtm" )
+    if [ ! -d "${path_resolved}" ]; then
+      print_err_msg_exit "\
+    Missing link to FIXuppcrtm
+    RUN_ENVIR = \"${RUN_ENVIR}\"
+    FIXuppcrtm = \"$FIXuppcrtm\"
     path_resolved = \"${path_resolved}\"
     Please ensure that path_resolved is an existing directory and then rerun
     the experiment generation script."
