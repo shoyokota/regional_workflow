@@ -554,7 +554,7 @@ case $MACHINE in
     ;;
 
   "ORION")
-    NCORES_PER_NODE=24
+    NCORES_PER_NODE=40
     SCHED="${SCHED:-slurm}"
     PARTITION_DEFAULT=${PARTITION_DEFAULT:-"orion"}
     QUEUE_DEFAULT=${QUEUE_DEFAULT:-"batch"}
