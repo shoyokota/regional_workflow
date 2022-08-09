@@ -628,12 +628,18 @@ if [[ ${gsi_type} == "ANALYSIS" && ${ob_type} == "radardbz" ]]; then
   bkgerr_vs=0.1
   bkgerr_hzscl="0.4,0.5,0.6"
   beta1_inv=0.0
-  ens_h=4.10790
-  ens_v=-0.30125
   readin_localization=.false.
+  ens_h=${ens_h_radardbz}
+  ens_v=${ens_v_radardbz}
+  nsclgrp=1
+  ngvarloc=1
+  i_ensloccov4tim=0
+  i_ensloccov4var=0
+  i_ensloccov4scl=0
   q_hyb_ens=.true.
   if_model_dbz=.true.
 fi
+naensloc=`expr ${nsclgrp} \* ${ngvarloc} + ${nsclgrp} - 1`
 CONVINFO=${FIX_GSI}/${CONVINFO_FN}
 HYBENSINFO=${FIX_GSI}/${HYBENSINFO_FN}
 OBERROR=${FIX_GSI}/${OBERROR_FN}

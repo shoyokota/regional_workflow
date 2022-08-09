@@ -619,14 +619,25 @@ binary_diag=.true.
 # &HYBRID_ENSEMBLE
 readin_localization=.true.     #if true, it overwrites the "beta1_inv/ens_h/ens_v" setting
 beta1_inv=0.15                 #beata_inv is 1-ensemble_wgt
-ens_h=110
-ens_v=3
+ens_h=110                      #horizontal localization scale of "Gaussian function=exp(-0.5)" for EnVar (km)
+ens_v=3                        #vertical localization scale of "Gaussian function=exp(-0.5)" for EnVar (positive:grids, negative:lnp)
+ens_h_radardbz=110             #horizontal localization scale of "Gaussian function=exp(-0.5)" for radardbz EnVar (km)
+ens_v_radardbz=3               #vertical localization scale of "Gaussian function=exp(-0.5)" for radardbz EnVar (positive:grids, negative:lnp)
+nsclgrp=1
+ngvarloc=1
+i_ensloccov4tim=0
+i_ensloccov4var=0
+i_ensloccov4scl=0
 regional_ensemble_option=1     #1 for GDAS ; 5 for FV3LAM ensemble
 grid_ratio_fv3=2.0             #fv3 resolution 3km, so analysis=3*2=6km
 grid_ratio_ens=3               #if analysis is 3km, then ensemble=3*3=9km. GDAS ensemble is 20km
 i_en_perts_io=1                #0 or 1: original file   3: pre-processed ensembles
 q_hyb_ens=.false.
 ens_fast_read=.false.
+corrlength=400                 #horizontal localization scale of "Gaspari-Cohn function=0" for EnKF (km)
+lnsigcutoff=0.5                #vertical localization scale of "Gaspari-Cohn function=0" for EnKF (lnp)
+corrlength_radardbz=400        #horizontal localization scale of "Gaspari-Cohn function=0" for radardbz EnKF (km)
+lnsigcutoff_radardbz=0.5       #vertical localization scale of "Gaspari-Cohn function=0" for radardbz EnKF (lnp)
 
 # &RAPIDREFRESH_CLDSURF
 l_PBL_pseudo_SurfobsT=.false.

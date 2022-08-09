@@ -118,12 +118,6 @@ SST_update_hour=01
 GVF_update_hour=04
 SNOWICE_update_hour=00
 
-# &HYBRID_ENSEMBLE
-beta1_inv=0.15   #weight of static B
-readin_localization=.false.
-ens_h=110        #horizontal localization (km)
-ens_v=3          #vertical localization (grids)
-
 DT_ATMOS=60
 NCORES_RUN_ANAL=240
 NCORES_RUN_OBSERVER=80
@@ -211,6 +205,13 @@ if [[ ${regional_ensemble_option} == "5" ]]; then
   RRFSE_NWGES="${EXPT_BASEDIR}/rrfs_b_ens/ptmp/nwges" # Path to RRFSE directory NWGES that mostly contains ensemble restart files for GSI hybrid.
   NUM_ENS_MEMBERS=30     # FV3LAM ensemble size for GSI hybrid analysis
 fi
+beta1_inv=0.15             #weight of static B
+readin_localization=.false.
+nsclgrp=1                  #number of scales for scale-dependent localization
+ens_h="110"                #horizontal localization scale of "Gaussian function=exp(-0.5)" for EnVar (km)
+ens_v="3"                  #vertical localization scale of "Gaussian function=exp(-0.5)" for EnVar (positive:grids, negative:lnp)
+ens_h_radardbz="4.10790"   #horizontal localization scale of "Gaussian function=exp(-0.5)" for radardbz EnVar (km)
+ens_v_radardbz="-0.30125"  #vertical localization scale of "Gaussian function=exp(-0.5)" for radardbz EnVar (positive:grids, negative:lnp)
 
 
 if [[ ${DO_ENSEMBLE}  == "TRUE" ]]; then

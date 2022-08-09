@@ -211,4 +211,7 @@ if [[ ${DO_RECENTER}  == "TRUE" ]]; then
   ENSCTRL_PTMP="${EXPT_BASEDIR}/rrfs_b/ptmp"  # Path to directory STMP that mostly contains control input files for ensemble recentering.
   ENSCTRL_NWGES="${EXPT_BASEDIR}/rrfs_b/ptmp/nwges"  # Path to directory STMP that mostly contains control input files for ensemble recentering.
 fi
-
+corrlength="400"           #horizontal localization scale of "Gaspari-Cohn function=0" for EnKF (km) ~ ens_h*(40/3)**0.5
+lnsigcutoff="0.5"          #vertical localization scale of "Gaspari-Cohn function=0" for EnKF (lnp) ~ ens_v*(40/3)**0.5
+corrlength_radardbz="18"   #horizontal localization scale of "Gaspari-Cohn function=0" for radardbz EnKF (km) ~ ens_h*(40/3)**0.5
+lnsigcutoff_radardbz="0.5" #vertical localization scale of "Gaspari-Cohn function=0" for radardbz EnKF (lnp) ~ -ens_v*(40/3)**0.5
