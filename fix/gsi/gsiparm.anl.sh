@@ -3,7 +3,7 @@ gsi_namelist="
    miter=${miter},niter(1)=${niter1},niter(2)=${niter2},
    write_diag(1)=.true.,write_diag(2)=${write_diag_2},write_diag(3)=.true.,
    qoption=2,print_obs_para=.true.,diag_radardbz=${diag_radardbz},
-   if_model_dbz=${if_model_dbz}, static_gsi_nopcp_dbz=0.0,
+   if_model_dbz=${if_model_dbz},static_gsi_nopcp_dbz=0.0,if_use_w_vr=.false.,
    rmesh_dbz=4.0,rmesh_vr=4.0,zmesh_dbz=1000.0,zmesh_vr=1000.0,
    missing_to_nopcp=.false.,radar_no_thinning=.true.,
    gencode=78,factqmin=0.0,factqmax=0.0,
