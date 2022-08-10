@@ -475,7 +475,7 @@ else
   esac
 fi
 
-if [[ ${gsi_type} == "OBSERVER" || ${ob_type} == "conv" ]]; then
+if [[ ${gsi_type} == "OBSERVER" || ${ob_type} == "conv" || ${ob_type} == "all" ]]; then
 
   obs_files_source[0]=${obspath_tmp}/${obsfileprefix}.t${HH}${SUBH}z.prepbufr.tm00
   obs_files_target[0]=prepbufr
@@ -488,10 +488,17 @@ if [[ ${gsi_type} == "OBSERVER" || ${ob_type} == "conv" ]]; then
   obs_files_source[${obs_number}]=${obspath_tmp}/${obsfileprefix}.t${HH}${SUBH}z.nexrad.tm00.bufr_d
   obs_files_target[${obs_number}]=l2rwbufr
 
-  if [ ${DO_ENKF_RADAR_REF} == "TRUE" ]; then
+  if [[ ${DO_ENKF_RADAR_REF} == "TRUE" || ${ob_type} == "all" ]]; then
     obs_number=${#obs_files_source[@]}
-    obs_files_source[${obs_number}]=${cycle_dir}/process_radarref/00/Gridded_ref.nc
+    if [ ${cycle_type} == "spinup" ]; then
+      obs_files_source[${obs_number}]=${cycle_dir}/process_radarref_spinup/00/Gridded_ref.nc
+    else
+      obs_files_source[${obs_number}]=${cycle_dir}/process_radarref/00/Gridded_ref.nc
+    fi
     obs_files_target[${obs_number}]=dbzobs.nc
+    if [[ ! -f ${obs_files_source[${obs_number}]} && ${ob_type} == "all" ]]; then
+      ob_type="conv"
+    fi
   fi
 
 else
@@ -621,7 +628,7 @@ if [ ${DO_ENKF_RADAR_REF} == "TRUE" ]; then
   if_model_dbz=.true.
 fi
 if [[ ${gsi_type} == "ANALYSIS" && ${ob_type} == "radardbz" ]]; then
-  ANAVINFO=${FIX_GSI}/${ENKF_ANAVINFO_DBZ_FN}
+  ANAVINFO=${FIX_GSI}/${ANAVINFO_DBZ_FN}
   miter=1
   niter1=100
   niter2=0
@@ -637,6 +644,11 @@ if [[ ${gsi_type} == "ANALYSIS" && ${ob_type} == "radardbz" ]]; then
   i_ensloccov4var=0
   i_ensloccov4scl=0
   q_hyb_ens=.true.
+  if_model_dbz=.true.
+fi
+if [[ ${gsi_type} == "ANALYSIS" && ${ob_type} == "all" ]]; then
+  ANAVINFO=${FIX_GSI}/${ANAVINFO_ALL_FN}
+  beta1_inv=0.0
   if_model_dbz=.true.
 fi
 naensloc=`expr ${nsclgrp} \* ${ngvarloc} + ${nsclgrp} - 1`
@@ -1030,7 +1042,7 @@ fi
 #
 #-----------------------------------------------------------------------
 #
-if [ ${BKTYPE} -eq 0 ] && [ ${ob_type} == "conv" ] && [ "${DO_SOIL_ADJUST}" = "TRUE" ]; then  # warm start
+if [ ${BKTYPE} -eq 0 ] && [ ${ob_type} == "conv" -o ${ob_type} == "all" ] && [ "${DO_SOIL_ADJUST}" = "TRUE" ]; then  # warm start
   cd ${bkpath}
   if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
     ln_vrfy -snf ${fixgriddir}/fv3_grid_spec                fv3_grid_spec

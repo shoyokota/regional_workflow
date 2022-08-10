@@ -976,6 +976,9 @@ MODULES_RUN_TASK_FP script.
     <envar><name>SLASH_ENSMEM_SUBDIR</name><value><cyclestr>{{ slash_ensmem_subdir }}</cyclestr></value></envar>
     <envar><name>SATBIAS_DIR</name><value><cyclestr>&NWGES_BASEDIR;/satbias</cyclestr></value></envar>
     <envar><name>nens</name><value>{{ num_ens_members }}</value></envar>
+    {%- if do_envar_radar_ref and do_envar_radar_ref_once %}
+    <envar><name>OB_TYPE</name><value>all</value></envar>
+    {%- endif %}
 
     <dependency>
        <and>
@@ -984,6 +987,9 @@ MODULES_RUN_TASK_FP script.
          {%- if use_rrfse_ens %}
          <or>
            <and>
+	     {%- if do_envar_radar_ref and do_envar_radar_ref_once %}
+             <taskdep task="&PROCESS_RADAR_REF_TN;_#type#"/>
+	     {%- endif %}
              <or>
              {%- for h in cycl_hrs_hyb_fv3lam_ens %}
                <streq><left>{{ h }}</left><right><cyclestr>@H</cyclestr></right></streq>
@@ -1005,7 +1011,7 @@ MODULES_RUN_TASK_FP script.
 
   </task>
 
-{%- if do_envar_radar_ref %}
+{%- if do_envar_radar_ref and not do_envar_radar_ref_once %}
 <!--
 ************************************************************************
 ************************************************************************
@@ -1039,6 +1045,7 @@ MODULES_RUN_TASK_FP script.
 
     <dependency>
        <and>
+         <taskdep task="&PROCESS_RADAR_REF_TN;_#type#"/>
          <taskdep task="&ANAL_GSI_TN;_#type#"/>
          <or>    
             {%- for h in cycl_hrs_hyb_fv3lam_ens %}
@@ -1134,7 +1141,7 @@ MODULES_RUN_TASK_FP script.
              <taskdep task="&RUN_ENKFUPDT_TN;"/>
            {%- endif %}
         </and>
-        {%- else %}
+        {%- elif do_envar_radar_ref and not do_envar_radar_ref_once %}
         <or>
           <and>
             <taskdep task="&ANAL_GSI_TN;_#type#"/>
@@ -1151,6 +1158,8 @@ MODULES_RUN_TASK_FP script.
             </or>   
           </and>
         </or>
+        {%- else %}
+        <taskdep task="&ANAL_GSI_TN;_#type#"/>
         {%- endif %}
       </and>
     </dependency>
@@ -1200,7 +1209,7 @@ MODULES_RUN_TASK_FP script.
       {%- elif do_dacycle and do_refl2tten%}
       <taskdep task="&RADAR_REFL2TTEN_TN;_#type#"/>
       {%- elif do_dacycle %}
-        {%- if do_envar_radar_ref %}
+        {%- if do_envar_radar_ref and not do_envar_radar_ref_once %}
         <taskdep task="&HYBRID_RADAR_REF_TN;_#type#"/>
         {%- else  %}
         <taskdep task="&ANAL_GSI_TN;_#type#{{ uscore_ensmem_name }}"/>

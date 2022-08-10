@@ -651,6 +651,7 @@ i_use_2mT4B=0
 HYBENSMEM_NMIN=80
 ANAVINFO_FN="anavinfo.rrfs"
 ANAVINFO_DBZ_FN="anavinfo.rrfs_dbz"
+ANAVINFO_ALL_FN="anavinfo.rrfs_all"
 ENKF_ANAVINFO_FN="anavinfo.rrfs"
 ENKF_ANAVINFO_DBZ_FN="anavinfo.enkf.rrfs_dbz"
 CONVINFO_FN="convinfo.rrfs"
@@ -1855,6 +1856,9 @@ TILE_SETS="full"
 # DO_ENVAR_RADAR_REF:
 # Decide whether or not to run Radar Reflectivity hybrid analysis
 #
+# DO_ENVAR_RADAR_REF_ONCE:
+# Decide whether or not to run Radar Reflectivity hybrid analysis simultaneously with other observations
+#
 # DO_RECENTER:
 # Decide whether or not to run recenter for the ensemble members
 #
@@ -1873,6 +1877,7 @@ DO_GSIOBSERVER="FALSE"
 DO_ENKFUPDATE="FALSE"
 DO_ENKF_RADAR_REF="FALSE"
 DO_ENVAR_RADAR_REF="FALSE"
+DO_ENVAR_RADAR_REF_ONCE="FALSE"
 DO_RECENTER="FALSE"
 DO_ENS_GRAPHICS="FALSE"
 DO_ENSPOST="FALSE"
