@@ -226,8 +226,8 @@ if [ ${ob_type} == "conv" ]; then
 fi
 if [ ${ob_type} == "radardbz" ]; then
   ANAVINFO=${FIX_GSI}/${ENKF_ANAVINFO_DBZ_FN}
-  CORRLENGTH=${corrlength_radardbz}
-  LNSIGCUTOFF=${lnsigcutoff_radardbz}
+  CORRLENGTH=${CORRLENGTH_radardbz}
+  LNSIGCUTOFF=${LNSIGCUTOFF_radardbz}
   found_ob_type=1
 fi
 if [ ${found_ob_type} == 0 ]; then

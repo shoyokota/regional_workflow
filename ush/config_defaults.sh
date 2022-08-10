@@ -634,10 +634,10 @@ grid_ratio_ens=3               #if analysis is 3km, then ensemble=3*3=9km. GDAS 
 i_en_perts_io=1                #0 or 1: original file   3: pre-processed ensembles
 q_hyb_ens=.false.
 ens_fast_read=.false.
-corrlength=400                 #horizontal localization scale of "Gaspari-Cohn function=0" for EnKF (km)
-lnsigcutoff=0.5                #vertical localization scale of "Gaspari-Cohn function=0" for EnKF (lnp)
-corrlength_radardbz=400        #horizontal localization scale of "Gaspari-Cohn function=0" for radardbz EnKF (km)
-lnsigcutoff_radardbz=0.5       #vertical localization scale of "Gaspari-Cohn function=0" for radardbz EnKF (lnp)
+CORRLENGTH=400                 #horizontal localization scale of "Gaspari-Cohn function=0" for EnKF (km)
+LNSIGCUTOFF=0.5                #vertical localization scale of "Gaspari-Cohn function=0" for EnKF (lnp)
+CORRLENGTH_radardbz=400        #horizontal localization scale of "Gaspari-Cohn function=0" for radardbz EnKF (km)
+LNSIGCUTOFF_radardbz=0.5       #vertical localization scale of "Gaspari-Cohn function=0" for radardbz EnKF (lnp)
 
 # &RAPIDREFRESH_CLDSURF
 l_PBL_pseudo_SurfobsT=.false.
