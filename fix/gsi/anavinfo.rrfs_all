@@ -71,10 +71,10 @@ control_vector::
  sst       1      0       1.00        -1.0     state    sst
  stl       1      0       1.00        -1.0     motley   sst
  sti       1      0       1.00        -1.0     motley   sst
- qr       65      1       1.0        -1.0     state    qr
- qs       65      1       1.0        -1.0     state    qs
- qi       65      1       1.0        -1.0     state    qi
- qg       65      1       1.0        -1.0     state    qg
- ql       65      1       1.0        -1.0     state    qc
- dbz      65      1       1.00        -1.0     state    dbz
+ qr       65     11       1.00        -1.0     state    qr
+ qs       65     11       1.00        -1.0     state    qs
+ qi       65     11       1.00        -1.0     state    qi
+ qg       65     11       1.00        -1.0     state    qg
+ ql       65     11       1.00        -1.0     state    qc
+ dbz      65     11       1.00        -1.0     state    dbz
 ::
