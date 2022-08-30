@@ -205,6 +205,7 @@ if [[ ${regional_ensemble_option} == "5" ]]; then
   RRFSE_NWGES="${EXPT_BASEDIR}/rrfs_b_ens/ptmp/nwges" # Path to RRFSE directory NWGES that mostly contains ensemble restart files for GSI hybrid.
   NUM_ENS_MEMBERS=30     # FV3LAM ensemble size for GSI hybrid analysis
 fi
+l_both_fv3sar_gfs_ens=.false.
 beta1_inv=0.15             #weight of static B
 readin_localization=.false.
 nsclgrp=1                  #number of scales for scale-dependent localization

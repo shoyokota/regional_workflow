@@ -617,6 +617,7 @@ netcdf_diag=.false.
 binary_diag=.true.
 
 # &HYBRID_ENSEMBLE
+l_both_fv3sar_gfs_ens=.false.
 readin_localization=.true.     #if true, it overwrites the "beta1_inv/ens_h/ens_v" setting
 beta1_inv=0.15                 #beata_inv is 1-ensemble_wgt
 ens_h=110                      #horizontal localization scale of "Gaussian function=exp(-0.5)" for EnVar (km)

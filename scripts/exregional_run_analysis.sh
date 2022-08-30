@@ -199,6 +199,10 @@ else
   BKTYPE=1              # cold start
 fi
 
+if  [ ${ob_type} != "conv" ]; then #not using GDAS
+  l_both_fv3sar_gfs_ens=.false.
+fi
+
 #---------------------------------------------------------------------
 #
 # decide regional_ensemble_option: global ensemble (1) or FV3LAM ensemble (5)
@@ -247,7 +251,7 @@ if  [[ ${regional_ensemble_option:-1} -eq 5 ]]; then
   fi
 fi
 #
-if  [[ ${regional_ensemble_option:-1} -eq 1 ]]; then #using GDAS
+if  [[ ${regional_ensemble_option:-1} -eq 1 || ${l_both_fv3sar_gfs_ens} = ".true." ]]; then #using GDAS
   #-----------------------------------------------------------------------
   # Make a list of the latest GFS EnKF ensemble
   #-----------------------------------------------------------------------
@@ -345,20 +349,28 @@ niter2=50
 lread_obs_save=.false.
 lread_obs_skip=.false.
 if_model_dbz=.false.
+nummem_gfs=0
+nummem_fv3sar=0
 
 # Determine if hybrid option is available
 memname='atmf009'
 
 if [ ${regional_ensemble_option:-1} -eq 5 ]  && [ ${BKTYPE} != 1  ]; then 
-  nummem=$NUM_ENS_MEMBERS
+  if [ ${l_both_fv3sar_gfs_ens} = ".true." ]; then
+    nummem_gfs=$(more filelist03 | wc -l)
+    nummem_gfs=$((nummem_gfs - 3 ))
+  fi
+  nummem_fv3sar=$NUM_ENS_MEMBERS
+  nummem=`expr ${nummem_gfs} + ${nummem_fv3sar}`
   print_info_msg "$VERBOSE" "Do hybrid with FV3LAM ensemble"
   ifhyb=.true.
   print_info_msg "$VERBOSE" " Cycle ${YYYYMMDDHH}: GSI hybrid uses FV3LAM ensemble with n_ens=${nummem}" 
   grid_ratio_ens="1"
   ens_fast_read=.true.
 else    
-  nummem=$(more filelist03 | wc -l)
-  nummem=$((nummem - 3 ))
+  nummem_gfs=$(more filelist03 | wc -l)
+  nummem_gfs=$((nummem_gfs - 3 ))
+  nummem=${nummem_gfs}
   if [[ ${nummem} -ge ${HYBENSMEM_NMIN} ]]; then
     print_info_msg "$VERBOSE" "Do hybrid with ${memname}"
     ifhyb=.true.

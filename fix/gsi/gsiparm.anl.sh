@@ -145,6 +145,7 @@ OBS_INPUT::
    q_hyb_ens=${q_hyb_ens},
    aniso_a_en=.false.,generate_ens=.false.,
    n_ens=${nummem},
+   l_both_fv3sar_gfs_ens=${l_both_fv3sar_gfs_ens},n_ens_gfs=${nummem_gfs},n_ens_fv3sar=${nummem_fv3sar},
    beta_s0=${beta1_inv},s_ens_h=${ens_h},s_ens_v=${ens_v},
    regional_ensemble_option=${regional_ensemble_option},
    pseudo_hybens = .false.,
