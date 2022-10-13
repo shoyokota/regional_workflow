@@ -62,6 +62,7 @@ for onetime in ${XX[*]};do
     rm -f ${CYCLE_BASEDIR}/${onetime}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam/phy*nc
     rm -f ${CYCLE_BASEDIR}/${onetime}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam/dyn*nc
     rm -rf ${CYCLE_BASEDIR}/${onetime}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam/RESTART
+    rm -rf ${CYCLE_BASEDIR}/${onetime}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam/INPUT
     echo "Deleted netCDF files in ${CYCLE_BASEDIR}/${onetime}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam"
   fi
 done

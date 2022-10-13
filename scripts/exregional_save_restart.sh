@@ -83,6 +83,8 @@ print_input_args valid_args
 case $MACHINE in
 
   "ORION")
+    ulimit -s unlimited
+    ulimit -a
     DO_IO_COMBINE="TRUE"
     IO_LAYOUT_Y_IN=1
     ;;
@@ -129,29 +131,39 @@ list_iolayout=$(seq 0 $n_iolayouty)
 
 restart_prefix=${save_yyyy}${save_mm}${save_dd}.${save_hh}0000
 if [ ! -r ${nwges_dir}/INPUT/gfs_ctrl.nc ]; then
-  cp_vrfy $run_dir/INPUT/gfs_ctrl.nc ${nwges_dir}/INPUT/gfs_ctrl.nc
   if [ -r ${run_dir}/INPUT/coupler.res ]; then  # warm start
     if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
       for file in ${filelistn}; do
+        set -e
         cp_vrfy $run_dir/INPUT/${file} ${nwges_dir}/INPUT/${file}
+        set +e
       done
     else
       for file in ${filelistn}; do
         for ii in ${list_iolayout}
         do
           iii=$(printf %4.4i $ii)
+         set -e
          cp_vrfy $run_dir/INPUT/${file}.${iii} ${nwges_dir}/INPUT/${file}.${iii}
+         set +e
         done
       done
     fi
     for file in ${filelist}; do
+      set -e
       cp_vrfy $run_dir/INPUT/${file} ${nwges_dir}/INPUT/${file}
+      set +e
     done
   else  # cold start
     for file in ${filelistcold}; do
+      set -e
       cp_vrfy $run_dir/INPUT/${file} ${nwges_dir}/INPUT/${file}
+      set +e
     done
   fi
+  set -e
+  cp_vrfy $run_dir/INPUT/gfs_ctrl.nc ${nwges_dir}/INPUT/gfs_ctrl.nc
+  set +e
 fi
 if [ -r "$run_dir/RESTART/${restart_prefix}.coupler.res" ]; then
   if [ "${DO_IO_COMBINE}" == "TRUE" ] && [ "${IO_LAYOUT_Y}" != "1" ]; then
@@ -161,9 +173,19 @@ if [ -r "$run_dir/RESTART/${restart_prefix}.coupler.res" ]; then
       filelistnn=${filelistn}
     fi
     for file in ${filelistnn}; do
-      ${EXECDIR}/mppnccombine -v -n4 -r $run_dir/RESTART/${restart_prefix}.${file}_tmp $run_dir/RESTART/${restart_prefix}.${file}.????
-      nccopy -4 $run_dir/RESTART/${restart_prefix}.${file}_tmp $run_dir/RESTART/${restart_prefix}.${file}
-      rm -f $run_dir/RESTART/${restart_prefix}.${file}_tmp
+      if [ -f $run_dir/RESTART/${restart_prefix}.${file}.0000 ]; then
+        rm -f $run_dir/RESTART/${restart_prefix}.${file}_tmp
+        set -e
+        ${EXECDIR}/mppnccombine -v -n4 -r $run_dir/RESTART/${restart_prefix}.${file}_tmp $run_dir/RESTART/${restart_prefix}.${file}.????
+        set +e
+      fi
+      if [ -f $run_dir/RESTART/${restart_prefix}.${file}_tmp ]; then
+        rm -f $run_dir/RESTART/${restart_prefix}.${file}
+        set -e
+        nccopy -4 $run_dir/RESTART/${restart_prefix}.${file}_tmp $run_dir/RESTART/${restart_prefix}.${file}
+        set +e
+        rm -f $run_dir/RESTART/${restart_prefix}.${file}_tmp
+      fi
     done
   fi
   if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
@@ -206,9 +228,19 @@ else
         filelistnn=${filelistn}
       fi
       for file in ${filelistnn}; do
-        ${EXECDIR}/mppnccombine -v -n4 -r $run_dir/RESTART/${file}_tmp $run_dir/RESTART/${file}.????
-        nccopy -4 $run_dir/RESTART/${file}_tmp $run_dir/RESTART/${file}
-        rm -f $run_dir/RESTART/${file}_tmp
+        if [ -f $run_dir/RESTART/${file}.0000 ]; then
+          rm -f $run_dir/RESTART/${file}_tmp
+          set -e
+          ${EXECDIR}/mppnccombine -v -n4 -r $run_dir/RESTART/${file}_tmp $run_dir/RESTART/${file}.????
+          set +e
+        fi
+        if [ -f $run_dir/RESTART/${file}_tmp ]; then
+          rm -f $run_dir/RESTART/${file}
+          set -e
+          nccopy -4 $run_dir/RESTART/${file}_tmp $run_dir/RESTART/${file}
+          set +e
+          rm -f $run_dir/RESTART/${file}_tmp
+        fi
       done
     fi
     if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then

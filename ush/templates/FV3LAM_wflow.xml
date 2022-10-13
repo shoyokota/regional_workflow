@@ -205,7 +205,7 @@ tasks; and the "FCST" type is used for the RUN_FCST_TN task.
 ]>
 
 {%- if do_retro %}
-<workflow realtime="F" scheduler="&SCHED;" cyclethrottle="5" cyclelifespan="07:00:00:00">
+<workflow realtime="F" scheduler="&SCHED;" cyclethrottle="1" cyclelifespan="07:00:00:00">
 {% else %}
 <workflow realtime="T" scheduler="&SCHED;" cyclethrottle="24" cyclelifespan="01:00:00:00">
 {%- endif %}
@@ -659,7 +659,7 @@ MODULES_RUN_TASK_FP script.
 ************************************************************************
 ************************************************************************
 -->
-  <task name="&PREP_CYC_SPINUP_TN;" cycledefs="spinupcyc" maxtries="{{ maxtries_run_prepstart }}">
+  <task name="&PREP_CYC_SPINUP_TN;{{ uscore_ensmem_name }}" cycledefs="spinupcyc" maxtries="{{ maxtries_run_prepstart }}">
 
     &RSRV_DEFAULT;
     &WALL_LIMIT_PRE;
@@ -669,8 +669,8 @@ MODULES_RUN_TASK_FP script.
     <nodes>{{ nnodes_run_prepstart }}:ppn={{ ppn_run_prepstart }}</nodes>
     <nodesize>&NCORES_PER_NODE;</nodesize>
     <walltime>{{ wtime_run_prepstart }}</walltime>
-    <jobname>&TAG;_&PREP_CYC_SPINUP_TN;</jobname>
-    <join><cyclestr>&LOGDIR;/&PREP_CYC_SPINUP_TN;_@Y@m@d@H.log</cyclestr></join>
+    <jobname>&TAG;_&PREP_CYC_SPINUP_TN;{{ uscore_ensmem_name }}</jobname>
+    <join><cyclestr>&LOGDIR;/&PREP_CYC_SPINUP_TN;{{ uscore_ensmem_name }}_@Y@m@d@H.log</cyclestr></join>
 
     <envar><name>GLOBAL_VAR_DEFNS_FP</name><value>&GLOBAL_VAR_DEFNS_FP;</value></envar>
     <envar><name>PDY</name><value><cyclestr>@Y@m@d</cyclestr></value></envar>
@@ -692,14 +692,17 @@ MODULES_RUN_TASK_FP script.
              {%- endfor %}
            </or>
 {%- if do_retro %}
-           <datadep age="00:00:05:00"><cyclestr>&FG_ROOT;/@Y@m@d@H/ics/gfs_data.tile7.halo0.nc</cyclestr></datadep>
-           <datadep age="00:00:05:00"><cyclestr offset="-{{ extrn_mdl_ics_offset_hrs }}:00:00">&FG_ROOT;/@Y@m@d@H/lbcs/gfs_bndy.tile7.001.nc</cyclestr></datadep>
-           <!--datadep age="00:00:10:00"><cyclestr offset="00:00:00">&FG_ROOT;/@Y@m@d@H/fcst_fv3lam/INPUT/gfs_ctrl.nc</cyclestr></datadep-->
+           <datadep age="00:00:05:00"><cyclestr>&FG_ROOT;/@Y@m@d@H{{ slash_ensmem_subdir }}/ics/gfs_data.tile7.halo0.nc</cyclestr></datadep>
+           <or>
+             {%- for h in range(0, extrn_mdl_ics_offset_hrs+1) %}
+             <datadep age="00:00:05:00"><cyclestr offset="-{{ h }}:00:00">&FG_ROOT;/@Y@m@d@H{{ slash_ensmem_subdir }}/lbcs/gfs_bndy.tile7.{{ "%03d" % boundary_len_hrs }}.nc</cyclestr></datadep>
+             {%- endfor %}
+           </or>
 {% else %}
            <and>
              <timedep><cyclestr offset="&START_TIME_SPINUP;">@Y@m@d@H@M00</cyclestr></timedep>
-             <taskdep task="&MAKE_ICS_TN;"/>
-             <taskdep task="&MAKE_LBCS_TN;" cycle_offset="-{{ extrn_mdl_ics_offset_hrs }}:00:00"/>
+             <taskdep task="&MAKE_ICS_TN;{{ uscore_ensmem_name }}"/>
+             <taskdep task="&MAKE_LBCS_TN;{{ uscore_ensmem_name }}" cycle_offset="-{{ extrn_mdl_ics_offset_hrs }}:00:00"/>
            </and>
 {%- endif %}
          </and>
@@ -709,10 +712,15 @@ MODULES_RUN_TASK_FP script.
            <strneq><left>{{ h }}</left><right><cyclestr>@H</cyclestr></right></strneq>
            {%- endfor %}
 {%- if do_retro %}
-           <datadep age="00:00:01:00"><cyclestr offset="-{{ da_cycle_interval_hrs }}:00:00">&FG_ROOT;/@Y@m@d@H/fcst_fv3lam_spinup/RESTART/</cyclestr><cyclestr>@Y@m@d.@H0000.coupler.res</cyclestr></datadep>
+           <datadep age="00:00:01:00"><cyclestr offset="-{{ da_cycle_interval_hrs }}:00:00">&FG_ROOT;/@Y@m@d@H{{ slash_ensmem_subdir }}/fcst_fv3lam_spinup/RESTART/</cyclestr><cyclestr>@Y@m@d.@H0000.coupler.res</cyclestr></datadep>
+           <or>
+             {%- for h in range(0, 6) %}
+             <datadep age="00:00:05:00"><cyclestr offset="-{{ h }}:00:00">&FG_ROOT;/@Y@m@d@H{{ slash_ensmem_subdir }}/lbcs/gfs_bndy.tile7.{{ "%03d" % boundary_len_hrs }}.nc</cyclestr></datadep>
+             {%- endfor %}
+           </or>
 {% else %}
            <timedep><cyclestr offset="&START_TIME_CONVENTIONAL_SPINUP;">@Y@m@d@H@M00</cyclestr></timedep>
-           <datadep age="00:00:01:00"><cyclestr offset="-{{ da_cycle_interval_hrs }}:00:00">&FG_ROOT;/@Y@m@d@H/fcst_fv3lam_spinup/RESTART/</cyclestr><cyclestr>@Y@m@d.@H0000.coupler.res</cyclestr></datadep>
+           <datadep age="00:00:01:00"><cyclestr offset="-{{ da_cycle_interval_hrs }}:00:00">&FG_ROOT;/@Y@m@d@H{{ slash_ensmem_subdir }}/fcst_fv3lam_spinup/RESTART/</cyclestr><cyclestr>@Y@m@d.@H0000.coupler.res</cyclestr></datadep>
 {%- endif %}
          </and>
        </or>
@@ -805,6 +813,11 @@ MODULES_RUN_TASK_FP script.
            {%- endfor %}
 {%- if do_retro %}
            <datadep age="00:00:01:00"><cyclestr offset="-{{ da_cycle_interval_hrs }}:00:00">&FG_ROOT;/@Y@m@d@H{{ slash_ensmem_subdir }}/fcst_fv3lam/RESTART/</cyclestr><cyclestr>@Y@m@d.@H0000.coupler.res</cyclestr></datadep>
+           <or>
+             {%- for h in range(0, 6) %}
+             <datadep age="00:00:05:00"><cyclestr offset="-{{ h }}:00:00">&FG_ROOT;/@Y@m@d@H{{ slash_ensmem_subdir }}/lbcs/gfs_bndy.tile7.{{ "%03d" % boundary_len_hrs }}.nc</cyclestr></datadep>
+             {%- endfor %}
+           </or>
 {% else %}
            <or>
              <and>
@@ -995,9 +1008,18 @@ MODULES_RUN_TASK_FP script.
                <streq><left>{{ h }}</left><right><cyclestr>@H</cyclestr></right></streq>
              {%- endfor %}
              </or>
-             {% for h in range(1, num_ens_members+1) %}
-             <datadep age="00:00:01:00"><cyclestr offset="-{{ da_cycle_interval_hrs }}:00:00">&RRFSE_FG_ROOT;/@Y@m@d@H/mem{{ "%04d" % h  }}/fcst_fv3lam/RESTART/</cyclestr><cyclestr>@Y@m@d.@H0000.coupler.res</cyclestr></datadep>
-             {%- endfor %}
+             <or>
+               <and>
+               {% for h in range(1, num_ens_members+1) %}
+                 <datadep age="00:00:01:00"><cyclestr offset="-{{ da_cycle_interval_hrs }}:00:00">&RRFSE_FG_ROOT;/@Y@m@d@H/mem{{ "%04d" % h  }}/fcst_fv3lam/RESTART/</cyclestr><cyclestr>@Y@m@d.@H0000.coupler.res</cyclestr></datadep>
+               {%- endfor %}
+               </and>
+               <and>
+               {% for h in range(1, num_ens_members+1) %}
+                 <datadep age="00:00:01:00"><cyclestr offset="-{{ da_cycle_interval_hrs }}:00:00">&RRFSE_FG_ROOT;/@Y@m@d@H/mem{{ "%04d" % h  }}/fcst_fv3lam_spinup/RESTART/</cyclestr><cyclestr>@Y@m@d.@H0000.coupler.res</cyclestr></datadep>
+               {%- endfor %}
+               </and>
+             </or>
            </and>
            <and>
               {%- for h in cycl_hrs_hyb_fv3lam_ens %}
@@ -1132,9 +1154,15 @@ MODULES_RUN_TASK_FP script.
         <taskdep task="&PROCESS_BUFR_TN;_#type#"/>
         {%- if do_enkfupdate %}
         <and>
+           {%- if do_spinup %}
+           {%- for h in cycl_hrs_spinstart %}
+            <strneq><left>{{ h }}</left><right><cyclestr>@H</cyclestr></right></strneq>
+           {%- endfor %}
+           {%- else %}
            {%- for h in cycl_hrs_prodstart %}
             <strneq><left>{{ h }}</left><right><cyclestr>@H</cyclestr></right></strneq>
            {%- endfor %}
+           {%- endif %}
            {%- if do_enkf_radar_ref %}
              <taskdep task="&ENKF_RADAR_REF_TN;"/>
            {%- else %}
@@ -1218,9 +1246,15 @@ MODULES_RUN_TASK_FP script.
       <or>
         <and>
           <or>
+           {%- if do_spinup %}
+           {%- for h in cycl_hrs_spinstart %}
+            <streq><left>{{ h }}</left><right><cyclestr>@H</cyclestr></right></streq>
+           {%- endfor %}
+           {%- else %}
            {%- for h in cycl_hrs_prodstart %}
             <streq><left>{{ h }}</left><right><cyclestr>@H</cyclestr></right></streq>
            {%- endfor %}
+           {%- endif %}
           </or>
           <taskdep task="&PREP_CYC_TN;_#type#{{ uscore_ensmem_name }}"/>
         </and>
@@ -1508,7 +1542,7 @@ MODULES_RUN_TASK_FP script.
 
     <var name="fhr"> {% for h in range(0, fcst_len_hrs_spinup+1) %}{{ " %03d" % h  }}{% endfor %} </var>
 
-    <task name="&RUN_POST_TN;_spinup_f#fhr#" cycledefs="spinupcyc" maxtries="{{ maxtries_run_post }}">
+    <task name="&RUN_POST_TN;_spinup{{ uscore_ensmem_name }}_f#fhr#" cycledefs="spinupcyc" maxtries="{{ maxtries_run_post }}">
 
       &RSRV_POST;
       &WALL_LIMIT_POST;
@@ -1517,26 +1551,26 @@ MODULES_RUN_TASK_FP script.
       <walltime>{{ wtime_run_post }}</walltime>
       <nodesize>&NCORES_PER_NODE;</nodesize>
       <jobname>&TAG;_&RUN_POST_TN;{{ uscore_ensmem_name }}_f#fhr#</jobname>
-      <join><cyclestr>&LOGDIR;/&RUN_POST_TN;_spinup_f#fhr#_@Y@m@d@H.log</cyclestr></join>
+      <join><cyclestr>&LOGDIR;/&RUN_POST_TN;_spinup{{ uscore_ensmem_name }}_f#fhr#_@Y@m@d@H.log</cyclestr></join>
 
       <envar><name>GLOBAL_VAR_DEFNS_FP</name><value>&GLOBAL_VAR_DEFNS_FP;</value></envar>
       <envar><name>PDY</name><value><cyclestr>@Y@m@d</cyclestr></value></envar>
       <envar><name>CDATE</name><value><cyclestr>@Y@m@d@H</cyclestr></value></envar>
       <envar><name>CYCLE_DIR</name><value><cyclestr>&CYCLE_BASEDIR;/@Y@m@d@H</cyclestr></value></envar>
       <envar><name>NWGES_DIR</name><value><cyclestr>&NWGES_BASEDIR;/@Y@m@d@H</cyclestr></value></envar>
-      <envar><name>SLASH_ENSMEM_SUBDIR</name><value><cyclestr></cyclestr></value></envar>
+      <envar><name>SLASH_ENSMEM_SUBDIR</name><value><cyclestr>{{ slash_ensmem_subdir }}</cyclestr></value></envar>
       <envar><name>cyc</name><value><cyclestr>@H</cyclestr></value></envar>
       <envar><name>fhr</name><value>#fhr#</value></envar>
       <envar><name>CYCLE_TYPE</name><value><cyclestr>spinup</cyclestr></value></envar>
       <envar><name>TMMARK</name><value>tm00</value></envar>
 
       <dependency>
-        <datadep age="02:30"><cyclestr>&CYCLE_BASEDIR;/@Y@m@d@H/fcst_fv3lam_spinup/logf#fhr#</cyclestr></datadep>
+        <datadep age="02:30"><cyclestr>&CYCLE_BASEDIR;/@Y@m@d@H{{ slash_ensmem_subdir }}/fcst_fv3lam_spinup/logf#fhr#</cyclestr></datadep>
       </dependency>
 
     </task>
 
-    <task name="&RUN_WGRIB2_TN;_spinup_f#fhr#" cycledefs="spinupcyc" maxtries="{{ maxtries_run_wgrib2 }}">
+    <task name="&RUN_WGRIB2_TN;_spinup{{ uscore_ensmem_name }}_f#fhr#" cycledefs="spinupcyc" maxtries="{{ maxtries_run_wgrib2 }}">
 
       &RSRV_WGRIB2;
       &WALL_LIMIT_POST;
@@ -1546,20 +1580,20 @@ MODULES_RUN_TASK_FP script.
       <nodesize>&NCORES_PER_NODE;</nodesize>
       <memory>{{ memo_run_wgrib2 }}</memory>
       <jobname>&TAG;_&RUN_WGRIB2_TN;{{ uscore_ensmem_name }}_f#fhr#</jobname>
-      <join><cyclestr>&LOGDIR;/&RUN_WGRIB2_TN;_spinup_f#fhr#_@Y@m@d@H.log</cyclestr></join>
+      <join><cyclestr>&LOGDIR;/&RUN_WGRIB2_TN;_spinup{{ uscore_ensmem_name }}_f#fhr#_@Y@m@d@H.log</cyclestr></join>
 
       <envar><name>GLOBAL_VAR_DEFNS_FP</name><value>&GLOBAL_VAR_DEFNS_FP;</value></envar>
       <envar><name>PDY</name><value><cyclestr>@Y@m@d</cyclestr></value></envar>
       <envar><name>CDATE</name><value><cyclestr>@Y@m@d@H</cyclestr></value></envar>
       <envar><name>CYCLE_DIR</name><value><cyclestr>&CYCLE_BASEDIR;/@Y@m@d@H</cyclestr></value></envar>
-      <envar><name>SLASH_ENSMEM_SUBDIR</name><value><cyclestr></cyclestr></value></envar>
+      <envar><name>SLASH_ENSMEM_SUBDIR</name><value><cyclestr>{{ slash_ensmem_subdir }}</cyclestr></value></envar>
       <envar><name>cyc</name><value><cyclestr>@H</cyclestr></value></envar>
       <envar><name>fhr</name><value>#fhr#</value></envar>
       <envar><name>CYCLE_TYPE</name><value><cyclestr>spinup</cyclestr></value></envar>
       <envar><name>TMMARK</name><value>tm00</value></envar>
 
       <dependency>
-        <taskdep task="&RUN_POST_TN;_spinup_f#fhr#"/>
+        <taskdep task="&RUN_POST_TN;_spinup{{ uscore_ensmem_name }}_f#fhr#"/>
       </dependency>
 
     </task>
@@ -1586,7 +1620,7 @@ MODULES_RUN_TASK_FP script.
     <envar><name>LOGDIR</name><value>&LOGDIR;</value></envar>
     <envar><name>CDATE</name><value><cyclestr>@Y@m@d@H</cyclestr></value></envar>
     <envar><name>NWGES_BASEDIR</name><value><cyclestr>&NWGES_BASEDIR;</cyclestr></value></envar>
-      <envar><name>SLASH_ENSMEM_SUBDIR</name><value><cyclestr></cyclestr></value></envar>
+    <envar><name>SLASH_ENSMEM_SUBDIR</name><value><cyclestr>{{ slash_ensmem_subdir }}</cyclestr></value></envar>
 
   </task>
 
@@ -1669,9 +1703,15 @@ MODULES_RUN_TASK_FP script.
 
     <dependency>
          <and>
+         {%- if do_spinup %}
+         {%- for h in cycl_hrs_spinstart %}
+         <strneq><left>{{ h }}</left><right><cyclestr>@H</cyclestr></right></strneq>
+         {%- endfor %}
+         {%- else %}
          {%- for h in cycl_hrs_prodstart %}
          <strneq><left>{{ h }}</left><right><cyclestr>@H</cyclestr></right></strneq>
          {%- endfor %}
+         {%- endif %}
          {%- for m in range(1, num_ens_members+1) %}
          <taskdep task="&PREP_CYC_PROD_TN;_mem{{ "%04d" % m }}"/>
          {%- endfor %}

@@ -95,6 +95,10 @@ case $MACHINE in
     ;;
 
   "ORION")
+    ulimit -s unlimited
+    ulimit -a
+    export OMP_NUM_THREADS=1
+    export OMP_STACKSIZE=1024M
     APRUN="srun"
     IO_LAYOUT_Y_IN=1
     ;;
@@ -385,6 +389,7 @@ if [ ${HH} -eq ${SNOWICE_update_hour} ] && [ ${cycle_type} == "prod" ] ; then
 
      if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
        ln_vrfy -sf ${FIX_GSI}/${PREDEF_GRID_NAME}/fv3_grid_spec  fv3_grid_spec
+       ln_vrfy -sf ./sfc_data.nc sfc_data.nc.0000
      else
        for ii in ${list_iolayout}
        do
@@ -636,7 +641,7 @@ fi
 #
 # go to INPUT directory.
 # prepare boundary conditions:
-#       the previous 12 cycles are searched to find the boundary files
+#       the previous 6 cycles are searched to find the boundary files
 #       that can cover the forecast length.
 #       The 0-h boundary is copied and others are linked.
 #
@@ -671,7 +676,7 @@ else
 #   let us figure out which boundary file is available
   bndy_prefix=gfs_bndy.tile7
   n=${EXTRN_MDL_LBCS_SEARCH_OFFSET_HRS}
-  end_search_hr=$(( 12 + ${EXTRN_MDL_LBCS_SEARCH_OFFSET_HRS} ))
+  end_search_hr=$(( 5 + ${EXTRN_MDL_LBCS_SEARCH_OFFSET_HRS} ))
   YYYYMMDDHHmInterv=$(date +%Y%m%d%H -d "${START_DATE} ${n} hours ago")
   lbcs_path=${lbcs_root}/${YYYYMMDDHHmInterv}${SLASH_ENSMEM_SUBDIR}/lbcs
   while [[ $n -le ${end_search_hr} ]] ; do
