@@ -130,7 +130,7 @@ tasks; and the "FCST" type is used for the RUN_FCST_TN task.
 {%- endif %}
 {%- if partition_analysis is not none %}
 <!ENTITY RSRV_ANALYSIS    "<account>&ACCOUNT;</account><queue>&QUEUE_ANALYSIS;</queue><partition>{{ partition_analysis }}</partition>">
-<!ENTITY RSRV_ENKF    "<account>&ACCOUNT;</account><queue>&QUEUE_ANALYSIS;</queue><partition>{{ partition_analysis }}</partition><native>&RRFS_RESERVE;</native>">
+<!ENTITY RSRV_ENKF    "<account>&ACCOUNT;</account><queue>&QUEUE_ANALYSIS;</queue><partition>{{ partition_analysis }}</partition><native>--exclusive &RRFS_RESERVE;</native>">
 {%- else %}
 <!ENTITY RSRV_ANALYSIS    "<account>&ACCOUNT;</account><queue>&QUEUE_ANALYSIS;</queue>">
 <!ENTITY RSRV_ENKF    "<account>&ACCOUNT;</account><queue>&QUEUE_ANALYSIS;</queue>">
