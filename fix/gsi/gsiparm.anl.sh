@@ -148,6 +148,7 @@ OBS_INPUT::
    q_hyb_ens=${q_hyb_ens},
    aniso_a_en=.false.,generate_ens=.false.,
    n_ens=${nummem},
+   l_both_fv3sar_gfs_ens=${l_both_fv3sar_gfs_ens},n_ens_gfs=${nummem_gfs},n_ens_fv3sar=${nummem_fv3sar},
    beta_s0=${beta1_inv},s_ens_h=${ens_h},s_ens_v=${ens_v},
    regional_ensemble_option=${regional_ensemble_option},
    pseudo_hybens = .false.,
@@ -159,6 +160,8 @@ OBS_INPUT::
    fv3sar_bg_opt=${fv3lam_bg_type},
    readin_localization=${readin_localization},
    ens_fast_read=${ens_fast_read},
+   nsclgrp=${nsclgrp},l_timloc_opt=.false.,ngvarloc=${ngvarloc},naensloc=${naensloc},
+   i_ensloccov4tim=${i_ensloccov4tim},i_ensloccov4var=${i_ensloccov4var},i_ensloccov4scl=${i_ensloccov4scl},
  /
  &RAPIDREFRESH_CLDSURF
    dfi_radar_latent_heat_time_period=20.0,

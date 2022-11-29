@@ -187,6 +187,10 @@ else
   BKTYPE=1              # cold start
 fi
 
+if  [ ${ob_type} != "conv" ]; then #not using GDAS
+  l_both_fv3sar_gfs_ens=.false.
+fi
+
 #---------------------------------------------------------------------
 #
 # decide regional_ensemble_option: global ensemble (1) or FV3LAM ensemble (5)
@@ -237,10 +241,11 @@ if  [[ ${regional_ensemble_option:-1} -eq 5 ]]; then
   if [[ $ifound -ne ${NUM_ENS_MEMBERS} ]]; then
     print_info_msg "Not enough FV3_LAM ensembles, will fall to GDAS"
     regional_ensemble_option=1
+    l_both_fv3sar_gfs_ens=.false.
   fi
 fi
 #
-if  [[ ${regional_ensemble_option:-1} -eq 1 ]]; then #using GDAS
+if  [[ ${regional_ensemble_option:-1} -eq 1 || ${l_both_fv3sar_gfs_ens} = ".true." ]]; then #using GDAS
   #-----------------------------------------------------------------------
   # Make a list of the latest GFS EnKF ensemble
   #-----------------------------------------------------------------------
@@ -340,20 +345,29 @@ niter2=50
 lread_obs_save=.false.
 lread_obs_skip=.false.
 if_model_dbz=.false.
+nummem_gfs=0
+nummem_fv3sar=0
+anav_type=${ob_type}
 
 # Determine if hybrid option is available
 memname='atmf009'
 
 if [ ${regional_ensemble_option:-1} -eq 5 ]  && [ ${BKTYPE} != 1  ]; then 
-  nummem=$NUM_ENS_MEMBERS
+  if [ ${l_both_fv3sar_gfs_ens} = ".true." ]; then
+    nummem_gfs=$(more filelist03 | wc -l)
+    nummem_gfs=$((nummem_gfs - 3 ))
+  fi
+  nummem_fv3sar=$NUM_ENS_MEMBERS
+  nummem=`expr ${nummem_gfs} + ${nummem_fv3sar}`
   print_info_msg "$VERBOSE" "Do hybrid with FV3LAM ensemble"
   ifhyb=.true.
   print_info_msg "$VERBOSE" " Cycle ${YYYYMMDDHH}: GSI hybrid uses FV3LAM ensemble with n_ens=${nummem}" 
   grid_ratio_ens="1"
   ens_fast_read=.true.
 else    
-  nummem=$(more filelist03 | wc -l)
-  nummem=$((nummem - 3 ))
+  nummem_gfs=$(more filelist03 | wc -l)
+  nummem_gfs=$((nummem_gfs - 3 ))
+  nummem=${nummem_gfs}
   if [[ ${nummem} -ge ${HYBENSMEM_NMIN} ]]; then
     print_info_msg "$VERBOSE" "Do hybrid with ${memname}"
     ifhyb=.true.
@@ -361,6 +375,9 @@ else
   else
     print_info_msg "$VERBOSE" " Cycle ${YYYYMMDDHH}: GSI does pure 3DVAR."
     print_info_msg "$VERBOSE" " Hybrid needs at least ${HYBENSMEM_NMIN} ${memname} ensembles, only ${nummem} available"
+  fi
+  if [[ ${anav_type} == "all" ]]; then
+    anav_type="conv"
   fi
 fi
 
@@ -392,6 +409,17 @@ if [ ${BKTYPE} -eq 1 ]; then  # cold start uses background from INPUT
   fv3lam_bg_type=1
 else                          # cycle uses background from restart
   if [ "${IO_LAYOUT_Y}" == "1" ]; then
+    if [ -r "${bkpath}/bk_${ob_type}_fv_core.res.tile1.nc" ]; then
+      cp_vrfy -f ${bkpath}/bk_${ob_type}_fv_core.res.tile1.nc     ${bkpath}/fv_core.res.tile1.nc
+      cp_vrfy -f ${bkpath}/bk_${ob_type}_fv_tracer.res.tile1.nc   ${bkpath}/fv_tracer.res.tile1.nc
+      cp_vrfy -f ${bkpath}/bk_${ob_type}_sfc_data.nc              ${bkpath}/sfc_data.nc
+      cp_vrfy -f ${bkpath}/bk_${ob_type}_phy_data.nc              ${bkpath}/phy_data.nc
+    else
+      cp_vrfy ${bkpath}/fv_core.res.tile1.nc     ${bkpath}/bk_${ob_type}_fv_core.res.tile1.nc
+      cp_vrfy ${bkpath}/fv_tracer.res.tile1.nc   ${bkpath}/bk_${ob_type}_fv_tracer.res.tile1.nc
+      cp_vrfy ${bkpath}/sfc_data.nc              ${bkpath}/bk_${ob_type}_sfc_data.nc
+      cp_vrfy ${bkpath}/phy_data.nc              ${bkpath}/bk_${ob_type}_phy_data.nc
+    fi
     ln_vrfy  -snf ${bkpath}/fv_core.res.tile1.nc             fv3_dynvars
     ln_vrfy  -snf ${bkpath}/fv_tracer.res.tile1.nc           fv3_tracer
     ln_vrfy  -snf ${bkpath}/sfc_data.nc                      fv3_sfcdata
@@ -459,7 +487,7 @@ else
   esac
 fi
 
-if [[ ${gsi_type} == "OBSERVER" || ${ob_type} == "conv" ]]; then
+if [[ ${gsi_type} == "OBSERVER" || ${anav_type} == "conv" || ${anav_type} == "all" ]]; then
 
   obs_files_source[0]=${obspath_tmp}/${obsfileprefix}.t${HH}${SUBH}z.prepbufr.tm00
   obs_files_target[0]=prepbufr
@@ -472,15 +500,19 @@ if [[ ${gsi_type} == "OBSERVER" || ${ob_type} == "conv" ]]; then
   obs_files_source[${obs_number}]=${obspath_tmp}/${obsfileprefix}.t${HH}${SUBH}z.nexrad.tm00.bufr_d
   obs_files_target[${obs_number}]=l2rwbufr
 
-  if [ ${DO_ENKF_RADAR_REF} == "TRUE" ]; then
+  if [[ ${DO_ENKF_RADAR_REF} == "TRUE" || ${anav_type} == "all" ]]; then
     obs_number=${#obs_files_source[@]}
-    obs_files_source[${obs_number}]=${cycle_dir}/process_radarref/00/Gridded_ref.nc
+    if [ ${cycle_type} == "spinup" ]; then
+      obs_files_source[${obs_number}]=${cycle_dir}/process_radarref_spinup/00/Gridded_ref.nc
+    else
+      obs_files_source[${obs_number}]=${cycle_dir}/process_radarref/00/Gridded_ref.nc
+    fi
     obs_files_target[${obs_number}]=dbzobs.nc
   fi
 
 else
 
-  if [ ${ob_type} == "radardbz" ]; then
+  if [ ${anav_type} == "radardbz" ]; then
 
     if [ ${cycle_type} == "spinup" ]; then
       obs_files_source[0]=${cycle_dir}/process_radarref_spinup/00/Gridded_ref.nc
@@ -604,7 +636,7 @@ if [ ${DO_ENKF_RADAR_REF} == "TRUE" ]; then
   beta1_inv=0.0
   if_model_dbz=.true.
 fi
-if [[ ${gsi_type} == "ANALYSIS" && ${ob_type} == "radardbz" ]]; then
+if [[ ${gsi_type} == "ANALYSIS" && ${anav_type} == "radardbz" ]]; then
   ANAVINFO=${FIX_GSI}/${ENKF_ANAVINFO_DBZ_FN}
   miter=1
   niter1=100
@@ -612,12 +644,23 @@ if [[ ${gsi_type} == "ANALYSIS" && ${ob_type} == "radardbz" ]]; then
   bkgerr_vs=0.1
   bkgerr_hzscl="0.4,0.5,0.6"
   beta1_inv=0.0
-  ens_h=4.10790
-  ens_v=-0.30125
   readin_localization=.false.
+  ens_h=${ens_h_radardbz}
+  ens_v=${ens_v_radardbz}
+  nsclgrp=1
+  ngvarloc=1
+  i_ensloccov4tim=0
+  i_ensloccov4var=0
+  i_ensloccov4scl=0
   q_hyb_ens=.true.
   if_model_dbz=.true.
 fi
+if [[ ${gsi_type} == "ANALYSIS" && ${anav_type} == "all" ]]; then
+  ANAVINFO=${FIX_GSI}/${ANAVINFO_ALL_FN}
+  beta1_inv=0.0
+  if_model_dbz=.true.
+fi
+naensloc=`expr ${nsclgrp} \* ${ngvarloc} + ${nsclgrp} - 1`
 CONVINFO=${FIX_GSI}/${CONVINFO_FN}
 HYBENSINFO=${FIX_GSI}/${HYBENSINFO_FN}
 OBERROR=${FIX_GSI}/${OBERROR_FN}
@@ -871,6 +914,9 @@ cat fort.208 fort.210 fort.211 fort.212 fort.213 fort.220 > $comout/rrfs_a.t${HH
 #-----------------------------------------------------------------------
 #
 touch gsi_complete.txt
+if [[ ${anav_type} == "radardbz" || ${anav_type} == "all" ]]; then
+  touch gsi_complete_radar.txt # for nonvarcldanl
+fi
 #
 #-----------------------------------------------------------------------
 #
@@ -933,23 +979,10 @@ if [ $netcdf_diag = ".true." ]; then
    listall_cnv="conv_ps conv_q conv_t conv_uv conv_pw conv_rw conv_sst conv_dbz"
    listall_rad="hirs2_n14 msu_n14 sndr_g08 sndr_g11 sndr_g11 sndr_g12 sndr_g13 sndr_g08_prep sndr_g11_prep sndr_g12_prep sndr_g13_prep sndrd1_g11 sndrd2_g11 sndrd3_g11 sndrd4_g11 sndrd1_g15 sndrd2_g15 sndrd3_g15 sndrd4_g15 sndrd1_g13 sndrd2_g13 sndrd3_g13 sndrd4_g13 hirs3_n15 hirs3_n16 hirs3_n17 amsua_n15 amsua_n16 amsua_n17 amsua_n18 amsua_n19 amsua_metop-a amsua_metop-b amsua_metop-c amsub_n15 amsub_n16 amsub_n17 hsb_aqua airs_aqua amsua_aqua imgr_g08 imgr_g11 imgr_g12 pcp_ssmi_dmsp pcp_tmi_trmm conv sbuv2_n16 sbuv2_n17 sbuv2_n18 omi_aura ssmi_f13 ssmi_f14 ssmi_f15 hirs4_n18 hirs4_metop-a mhs_n18 mhs_n19 mhs_metop-a mhs_metop-b mhs_metop-c amsre_low_aqua amsre_mid_aqua amsre_hig_aqua ssmis_las_f16 ssmis_uas_f16 ssmis_img_f16 ssmis_env_f16 iasi_metop-a iasi_metop-b iasi_metop-c seviri_m08 seviri_m09 seviri_m10 seviri_m11 cris_npp atms_npp ssmis_f17 cris-fsr_npp cris-fsr_n20 atms_n20 abi_g16"
 
-   cat_exec="${EXECDIR}/nc_diag_cat.x"
-
-   if [ -f $cat_exec ]; then
-      print_info_msg "$VERBOSE" "
-        Copying the nc_diag_cat executable to the run directory..."
-      cp_vrfy ${cat_exec} ${analworkdir}/nc_diag_cat.x
-   else
-      print_err_msg_exit "\
-        The nc_diag_cat executable specified in cat_exec does not exist:
-        cat_exec = \"$cat_exec\"
-        Build GSI and rerun."
-   fi
-
    for type in $listall_cnv; do
       count=$(ls pe*.${type}_${loop}.nc4 | wc -l)
       if [[ $count -gt 0 ]]; then
-         ${APRUN} ./nc_diag_cat.x -o diag_${type}_${string}.${YYYYMMDDHH}.nc4 pe*.${type}_${loop}.nc4
+         ${APRUN} nc_diag_cat.x -o diag_${type}_${string}.${YYYYMMDDHH}.nc4 pe*.${type}_${loop}.nc4
          gzip diag_${type}_${string}.${YYYYMMDDHH}.nc4*
          cp diag_${type}_${string}.${YYYYMMDDHH}.nc4.gz $comout
          echo "diag_${type}_${string}.${YYYYMMDDHH}.nc4*" >> listcnv
@@ -960,7 +993,7 @@ if [ $netcdf_diag = ".true." ]; then
    for type in $listall_rad; do
       count=$(ls pe*.${type}_${loop}.nc4 | wc -l)
       if [[ $count -gt 0 ]]; then
-         ${APRUN} ./nc_diag_cat.x -o diag_${type}_${string}.${YYYYMMDDHH}.nc4 pe*.${type}_${loop}.nc4
+         ${APRUN} nc_diag_cat.x -o diag_${type}_${string}.${YYYYMMDDHH}.nc4 pe*.${type}_${loop}.nc4
          gzip diag_${type}_${string}.${YYYYMMDDHH}.nc4*
          cp diag_${type}_${string}.${YYYYMMDDHH}.nc4.gz $comout
          echo "diag_${type}_${string}.${YYYYMMDDHH}.nc4*" >> listrad

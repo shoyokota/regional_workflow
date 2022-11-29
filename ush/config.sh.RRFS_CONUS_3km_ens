@@ -34,8 +34,12 @@ if [[ $MACHINE == "hera" ]] ; then
 fi
 
 if [[ $MACHINE == "orion" ]] ; then
-  ACCOUNT=ztrr
+  ACCOUNT=wrfruc
+  PARTITION_ANALYSIS=orion
   QUEUE_ANALYSIS="batch"
+  QUEUE_WGRIB2="batch"
+  QUEUE_GRAPHICS="batch"
+  QUEUE_POST="batch"
 fi
 
 if [[ $MACHINE == "wcoss2" ]] ; then
@@ -93,6 +97,15 @@ CYCL_HRS_STOCH=("00" "12")
 #CYCL_HRS_RECENTER=("19")
 CYCLEMONTH="11"
 CYCLEDAY="10-30"
+
+STARTYEAR=${DATE_FIRST_CYCL:0:4}
+STARTMONTH=${DATE_FIRST_CYCL:4:2}
+STARTDAY=${DATE_FIRST_CYCL:6:2}
+STARTHOUR="00"
+ENDYEAR=${DATE_LAST_CYCL:0:4}
+ENDMONTH=${DATE_LAST_CYCL:4:2}
+ENDDAY=${DATE_LAST_CYCL:6:2}
+ENDHOUR="23"
 
 PREEXISTING_DIR_METHOD="upgrade" # "rename"
 INITIAL_CYCLEDEF="${DATE_FIRST_CYCL}0600 ${DATE_LAST_CYCL}2300 12:00:00"
@@ -220,6 +233,13 @@ if [[ $MACHINE == "wcoss2" ]] ; then
   FV3GFS_FILE_FMT_LBCS="grib2"
 fi
 
+if [[ $MACHINE == "orion" ]] ; then
+  LAYOUT_X="30"
+  LAYOUT_Y="40"
+  PPN_RUN_FCST="40"
+  WTIME_RUN_WGRIB2="00:20:00"
+fi
+
 if [[ ${DO_ENSEMBLE}  == "TRUE" ]]; then
    NUM_ENS_MEMBERS=30
 #   DO_SPPT=TRUE
@@ -255,9 +275,7 @@ COMINgfs=""
 STMP="/mnt/lfs4/BMC/wrfruc/RRFSE/NCO_dirs/stmp"  # Path to directory STMP that mostly contains input files.
 PTMP="/mnt/lfs4/BMC/wrfruc/RRFSE/NCO_dirs/ptmp"  # Path to directory STMP that mostly contains input files.
 NWGES="/mnt/lfs4/BMC/wrfruc/RRFSE/NCO_dirs/nwges"  # Path to directory NWGES that save boundary, cold initial, restart files
-if [[ ${DO_RECENTER}  == "TRUE" || ${DO_ENSINIT} == "TRUE" ]]; then
-   ENSCTRL_STMP="/mnt/lfs4/BMC/nrtrr/NCO_dirs/stmp"  # Path to directory STMP that mostly contains control input files for ensemble recentering.
-   ENSCTRL_PTMP="/mnt/lfs4/BMC/nrtrr/NCO_dirs/ptmp"  # Path to directory STMP that mostly contains control input files for ensemble recentering.
-   ENSCTRL_NWGES="/mnt/lfs4/BMC/nrtrr/NCO_dirs/nwges"  # Path to directory STMP that mostly contains control input files for ensemble recentering.
-fi
+ENSCTRL_STMP="/mnt/lfs4/BMC/nrtrr/NCO_dirs/stmp"  # Path to directory STMP that mostly contains control input files for ensemble recentering.
+ENSCTRL_PTMP="/mnt/lfs4/BMC/nrtrr/NCO_dirs/ptmp"  # Path to directory STMP that mostly contains control input files for ensemble recentering.
+ENSCTRL_NWGES="/mnt/lfs4/BMC/nrtrr/NCO_dirs/nwges"  # Path to directory STMP that mostly contains control input files for ensemble recentering.
 
