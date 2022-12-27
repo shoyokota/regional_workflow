@@ -383,6 +383,9 @@ else
     print_info_msg "$VERBOSE" " Cycle ${YYYYMMDDHH}: GSI does pure 3DVAR."
     print_info_msg "$VERBOSE" " Hybrid needs at least ${HYBENSMEM_NMIN} ${memname} ensembles, only ${nummem} available"
   fi
+  if [[ ${ob_type} == "all" ]]; then
+    ob_type="conv"
+  fi
 fi
 
 #
@@ -512,9 +515,6 @@ if [[ ${gsi_type} == "OBSERVER" || ${ob_type} == "conv" || ${ob_type} == "all" ]
       obs_files_source[${obs_number}]=${cycle_dir}/process_radarref/00/Gridded_ref.nc
     fi
     obs_files_target[${obs_number}]=dbzobs.nc
-    if [[ ! -f ${obs_files_source[${obs_number}]} && ${ob_type} == "all" ]]; then
-      ob_type="conv"
-    fi
   fi
 
 else
@@ -644,7 +644,7 @@ if [ ${DO_ENKF_RADAR_REF} == "TRUE" ]; then
   if_model_dbz=.true.
 fi
 if [[ ${gsi_type} == "ANALYSIS" && ${ob_type} == "radardbz" ]]; then
-  ANAVINFO=${FIX_GSI}/${ANAVINFO_DBZ_FN}
+  ANAVINFO=${FIX_GSI}/${ENKF_ANAVINFO_DBZ_FN}
   miter=1
   niter1=100
   niter2=0
@@ -656,9 +656,9 @@ if [[ ${gsi_type} == "ANALYSIS" && ${ob_type} == "radardbz" ]]; then
   ens_v=${ens_v_radardbz}
   nsclgrp=1
   ngvarloc=1
-  i_ensloccov4tim=0
-  i_ensloccov4var=0
-  i_ensloccov4scl=0
+  r_ensloccov4tim=0
+  r_ensloccov4var=0
+  r_ensloccov4scl=0
   q_hyb_ens=.true.
   if_model_dbz=.true.
 fi

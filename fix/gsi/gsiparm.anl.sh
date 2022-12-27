@@ -158,7 +158,7 @@ OBS_INPUT::
    readin_localization=${readin_localization},
    ens_fast_read=${ens_fast_read},
    nsclgrp=${nsclgrp},l_timloc_opt=.false.,ngvarloc=${ngvarloc},naensloc=${naensloc},
-   i_ensloccov4tim=${i_ensloccov4tim},i_ensloccov4var=${i_ensloccov4var},i_ensloccov4scl=${i_ensloccov4scl},
+   r_ensloccov4tim=${r_ensloccov4tim},r_ensloccov4var=${r_ensloccov4var},r_ensloccov4scl=${r_ensloccov4scl},
  /
  &RAPIDREFRESH_CLDSURF
    dfi_radar_latent_heat_time_period=20.0,

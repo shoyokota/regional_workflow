@@ -626,9 +626,9 @@ ens_h_radardbz=110             #horizontal localization scale of "Gaussian funct
 ens_v_radardbz=3               #vertical localization scale of "Gaussian function=exp(-0.5)" for radardbz EnVar (positive:grids, negative:lnp)
 nsclgrp=1
 ngvarloc=1
-i_ensloccov4tim=0
-i_ensloccov4var=0
-i_ensloccov4scl=0
+r_ensloccov4tim=1.0
+r_ensloccov4var=1.0
+r_ensloccov4scl=1.0
 regional_ensemble_option=1     #1 for GDAS ; 5 for FV3LAM ensemble
 grid_ratio_fv3=2.0             #fv3 resolution 3km, so analysis=3*2=6km
 grid_ratio_ens=3               #if analysis is 3km, then ensemble=3*3=9km. GDAS ensemble is 20km

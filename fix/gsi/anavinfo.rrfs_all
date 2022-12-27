@@ -71,6 +71,7 @@ control_vector::
  sst       1      0       1.00        -1.0     state    sst
  stl       1      0       1.00        -1.0     motley   sst
  sti       1      0       1.00        -1.0     motley   sst
+ w        65     11       1.00        -1.0     state    w
  qr       65     11       1.00        -1.0     state    qr
  qs       65     11       1.00        -1.0     state    qs
  qi       65     11       1.00        -1.0     state    qi
