@@ -669,7 +669,6 @@ if [[ ${gsi_type} == "ANALYSIS" && ${ob_type} == "radardbz" ]]; then
 fi
 if [[ ${gsi_type} == "ANALYSIS" && ${ob_type} == "all" ]]; then
   ANAVINFO=${FIX_GSI}/${ANAVINFO_ALL_FN}
-  beta1_inv=0.0
   if_model_dbz=.true.
 fi
 naensloc=`expr ${nsclgrp} \* ${ngvarloc} + ${nsclgrp} - 1`
