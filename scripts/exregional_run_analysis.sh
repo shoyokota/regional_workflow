@@ -363,6 +363,9 @@ if [ ${regional_ensemble_option:-1} -eq 5 ]  && [ ${BKTYPE} != 1  ]; then
   if [ ${l_both_fv3sar_gfs_ens} = ".true." ]; then
     nummem_gfs=$(more filelist03 | wc -l)
     nummem_gfs=$((nummem_gfs - 3 ))
+  else
+    weight_ens_gfs=1.0
+    weight_ens_fv3sar=1.0
   fi
   nummem_fv3sar=$NUM_ENS_MEMBERS
   nummem=`expr ${nummem_gfs} + ${nummem_fv3sar}`
@@ -372,6 +375,8 @@ if [ ${regional_ensemble_option:-1} -eq 5 ]  && [ ${BKTYPE} != 1  ]; then
   grid_ratio_ens="1"
   ens_fast_read=.true.
 else    
+  weight_ens_gfs=1.0
+  weight_ens_fv3sar=1.0
   nummem_gfs=$(more filelist03 | wc -l)
   nummem_gfs=$((nummem_gfs - 3 ))
   nummem=${nummem_gfs}

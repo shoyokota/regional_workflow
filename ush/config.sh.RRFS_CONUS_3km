@@ -218,6 +218,8 @@ if [[ ${regional_ensemble_option} == "5" ]]; then
 fi
 netcdf_diag=.true.
 l_both_fv3sar_gfs_ens=.false.
+weight_ens_gfs=1.0
+weight_ens_fv3sar=1.0
 beta1_inv=0.15             #weight of static B
 readin_localization=.false.
 nsclgrp=1                  #number of scales for scale-dependent localization
