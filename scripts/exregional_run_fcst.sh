@@ -73,6 +73,7 @@ valid_args=( \
 "ensmem_indx" \
 "slash_ensmem_subdir" \
 "NWGES_BASEDIR" \
+"RESTART_HRS" \
 )
 process_args valid_args "$@"
 #
@@ -97,10 +98,10 @@ case $MACHINE in
   "WCOSS2")
     ulimit -s unlimited
     ulimit -a
-    export OMP_PROC_BIND=true
+#    export OMP_PROC_BIND=true
     export OMP_NUM_THREADS=2
     export OMP_STACKSIZE=1G
-    export OMP_PLACES=cores
+#    export OMP_PLACES=cores
     export MPICH_ABORT_ON_ERROR=1
     export MALLOC_MMAP_MAX_=0
     export MALLOC_TRIM_THRESHOLD_=134217728
@@ -134,7 +135,7 @@ case $MACHINE in
   "JET")
     ulimit -s unlimited
     ulimit -a
-    APRUN="srun"
+    APRUN="srun  --mem=0"
     if [ "${PREDEF_GRID_NAME}" == "RRFS_NA_3km" ]; then
       OMP_NUM_THREADS=4
     else
@@ -511,15 +512,7 @@ if [ "${DO_ENSEMBLE}" = TRUE ] && ([ "${DO_SPP}" = TRUE ] || [ "${DO_SPPT}" = TR
   || [ "${DO_SKEB}" = TRUE ] || [ "${DO_LSM_SPP}" =  TRUE ]); then
    for cyc_start in "${CYCL_HRS_STOCH[@]}"; do
      if [ ${HH} -eq ${cyc_start} ]; then 
-       if [ "${DO_ENSFCST}" = TRUE ]; then
-         if [ ${cycle_type} == "ensfcst" ]; then 
-           STOCH="TRUE"
-         else
-           STOCH="FALSE"
-         fi
-       else
-         STOCH="TRUE"
-       fi
+       STOCH="TRUE"
      fi
    done
 fi
@@ -565,8 +558,9 @@ create_model_configure_file \
   cdate="$cdate" \
   cycle_type="$cycle_type" \
   cycle_subtype="$cycle_subtype" \
+  run_dir="${run_dir}" \
   nthreads=${OMP_NUM_THREADS:-1} \
-  run_dir="${run_dir}" || print_err_msg_exit "\
+  restart_hrs="${RESTART_HRS}" || print_err_msg_exit "\
 Call to function to create a model configuration file for the current
 cycle's (cdate) run directory (run_dir) failed:
   cdate = \"${cdate}\"

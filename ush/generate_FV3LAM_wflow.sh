@@ -187,8 +187,8 @@ settings="\
   'machine': ${MACHINE}
   'partition_analysis': ${PARTITION_ANALYSIS}
   'queue_analysis': ${QUEUE_ANALYSIS}
-  'partition_wgrib2': ${PARTITION_WGRIB2}
-  'queue_wgrib2': ${QUEUE_WGRIB2}
+  'partition_prdgen': ${PARTITION_PRDGEN}
+  'queue_prdgen': ${QUEUE_PRDGEN}
   'partition_post': ${PARTITION_POST}
   'queue_post': ${QUEUE_POST}
 #
@@ -204,8 +204,9 @@ settings="\
   'make_lbcs_tn': ${MAKE_LBCS_TN}
   'run_fcst_tn': ${RUN_FCST_TN}
   'run_post_tn': ${RUN_POST_TN}
-  'run_wgrib2_tn': ${RUN_WGRIB2_TN}
+  'run_prdgen_tn': ${RUN_PRDGEN_TN}
   'anal_gsi': ${ANAL_GSI_TN}
+  'anal_sd_gsi': ${ANAL_SD_GSI_TN}
   'post_anal': ${POSTANAL_TN}
   'observer_gsi_ensmean': ${OBSERVER_GSI_ENSMEAN_TN}
   'observer_gsi': ${OBSERVER_GSI_TN}
@@ -214,6 +215,7 @@ settings="\
   'prep_cyc_prod': ${PREP_CYC_PROD_TN}
   'prep_cyc_ensmean': ${PREP_CYC_ENSMEAN_TN}
   'prep_cyc': ${PREP_CYC_TN}
+  'calc_ensmean': ${CALC_ENSMEAN_TN}
   'process_radarref': ${PROCESS_RADAR_REF_TN}
   'process_lightning': ${PROCESS_LIGHTNING_TN}
   'process_bufr': ${PROCESS_BUFR_TN}
@@ -222,7 +224,9 @@ settings="\
   'cldanl_nonvar': ${CLDANL_NONVAR_TN}
   'run_bufrsnd_tn': ${RUN_BUFRSND_TN}
   'save_restart': ${SAVE_RESTART_TN}
+  'save_da_output': ${SAVE_DA_OUTPUT_TN}
   'tag': ${TAG}
+  'net': ${NET}
   'jedi_envar_ioda': ${JEDI_ENVAR_IODA_TN}
 #
 # Number of nodes to use for each task.
@@ -241,7 +245,7 @@ settings="\
   'nnodes_run_enkf': ${NNODES_RUN_ENKF}
   'nnodes_run_recenter': ${NNODES_RUN_RECENTER}
   'nnodes_run_post': ${NNODES_RUN_POST}
-  'nnodes_run_wgrib2': ${NNODES_RUN_WGRIB2}
+  'nnodes_run_prdgen': ${NNODES_RUN_PRDGEN}
   'nnodes_proc_radar': ${NNODES_PROC_RADAR}
   'nnodes_proc_lightning': ${NNODES_PROC_LIGHTNING}
   'nnodes_proc_bufr': ${NNODES_PROC_BUFR}
@@ -281,7 +285,7 @@ settings="\
   'ppn_run_enkf': ${PPN_RUN_ENKF}
   'ppn_run_recenter': ${PPN_RUN_RECENTER}
   'ppn_run_post': ${PPN_RUN_POST}
-  'ppn_run_wgrib2': ${PPN_RUN_WGRIB2}
+  'ppn_run_prdgen': ${PPN_RUN_PRDGEN}
   'ppn_proc_radar': ${PPN_PROC_RADAR}
   'ppn_proc_lightning': ${PPN_PROC_LIGHTNING}
   'ppn_proc_bufr': ${PPN_PROC_BUFR}
@@ -293,6 +297,12 @@ settings="\
   'ppn_run_bufrsnd': ${PPN_RUN_BUFRSND}
   'ppn_save_restart': ${PPN_SAVE_RESTART}
   'ppn_run_jedienvar_ioda': ${PPN_RUN_JEDIENVAR_IODA}
+#
+  'tpp_make_ics': ${TPP_MAKE_ICS}
+  'tpp_make_lbcs': ${TPP_MAKE_LBCS}
+  'tpp_run_anal': ${TPP_RUN_ANAL}
+  'tpp_run_enkf': ${TPP_RUN_ENKF}
+  'tpp_run_fcst': ${TPP_RUN_FCST}
 #
 # Maximum wallclock time for each task.
 #
@@ -306,13 +316,15 @@ settings="\
   'wtime_run_prepstart': ${WTIME_RUN_PREPSTART}
   'wtime_run_prepstart_ensmean': ${WTIME_RUN_PREPSTART_ENSMEAN}
   'wtime_run_fcst': ${WTIME_RUN_FCST}
+  'wtime_run_fcst_long': ${WTIME_RUN_FCST_LONG}
+  'wtime_run_fcst_spinup': ${WTIME_RUN_FCST_SPINUP}
   'wtime_run_anal': ${WTIME_RUN_ANAL}
   'wtime_run_postanal': ${WTIME_RUN_POSTANAL}
   'wtime_run_enkf': ${WTIME_RUN_ENKF}
   'wtime_run_recenter': ${WTIME_RUN_RECENTER}
   'wtime_run_post': ${WTIME_RUN_POST}
   'wtime_run_enspost': ${WTIME_RUN_ENSPOST}
-  'wtime_run_wgrib2': ${WTIME_RUN_WGRIB2}
+  'wtime_run_prdgen': ${WTIME_RUN_PRDGEN}
   'wtime_proc_radar': ${WTIME_PROC_RADAR}
   'wtime_proc_lightning': ${WTIME_PROC_LIGHTNING}
   'wtime_proc_bufr': ${WTIME_PROC_BUFR}
@@ -340,8 +352,11 @@ settings="\
   'memo_run_ref2tten': ${MEMO_RUN_REF2TTEN}
   'memo_run_nonvarcldanl': ${MEMO_RUN_NONVARCLDANL}
   'memo_run_prepstart': ${MEMO_RUN_PREPSTART}
-  'memo_run_wgrib2': ${MEMO_RUN_WGRIB2}
+  'memo_run_prdgen': ${MEMO_RUN_PRDGEN}
   'memo_run_jedienvar_ioda': ${MEMO_RUN_JEDIENVAR_IODA}
+  'memo_prep_cyc': ${MEMO_PREP_CYC}
+  'memo_save_restart': ${MEMO_SAVE_RESTART}
+  'memo_save_da_output': ${MEMO_SAVE_DA_OUTPUT}
 #
 # Maximum number of tries for each task.
 #
@@ -359,7 +374,7 @@ settings="\
   'maxtries_anal_enkf': ${MAXTRIES_ANAL_ENKF}
   'maxtries_recenter': ${MAXTRIES_RECENTER}
   'maxtries_run_post': ${MAXTRIES_RUN_POST}
-  'maxtries_run_wgrib2': ${MAXTRIES_RUN_WGRIB2}
+  'maxtries_run_prdgen': ${MAXTRIES_RUN_PRDGEN}
   'maxtries_process_radarref': ${MAXTRIES_PROCESS_RADARREF}
   'maxtries_process_lightning': ${MAXTRIES_PROCESS_LIGHTNING}
   'maxtries_process_bufr': ${MAXTRIES_PROCESS_BUFR}
@@ -367,6 +382,7 @@ settings="\
   'maxtries_radar_ref2tten': ${MAXTRIES_RADAR_REF2TTEN}
   'maxtries_cldanl_nonvar': ${MAXTRIES_CLDANL_NONVAR}
   'maxtries_save_restart': ${MAXTRIES_SAVE_RESTART}
+  'maxtries_save_da_output': ${MAXTRIES_SAVE_DA_OUTPUT}
   'maxtries_jedi_envar_ioda': ${MAXTRIES_JEDI_ENVAR_IODA}
 #
 # Flags that specify whether to run the preprocessing tasks.
@@ -394,6 +410,7 @@ settings="\
   'ensctrl_comout_dir': ${ENSCTRL_COMOUT_DIR}
   'rrfse_nwges_basedir': ${RRFSE_NWGES_BASEDIR}
   'obspath': ${OBSPATH}
+  'obspath_pm': ${OBSPATH_PM}
   'global_var_defns_fp': ${GLOBAL_VAR_DEFNS_FP}
   'load_modules_run_task_fp': ${LOAD_MODULES_RUN_TASK_FP}
 #
@@ -424,27 +441,26 @@ settings="\
   'cycl_hrs_prodstart': [ $( printf "\'%s\', " "${CYCL_HRS_PRODSTART[@]}" ) ]
   'cycl_hrs_prodstart_ens': [ $( printf "\'%s\', " "${CYCL_HRS_PRODSTART_ENS[@]}" ) ]
   'cycl_hrs_recenter': [ $( printf "\'%s\', " "${CYCL_HRS_RECENTER[@]}" ) ]
-  'cycl_hrs_ensfcst': [ $( printf "\'%s\', " "${CYCL_HRS_ENSFCST[@]}" ) ]
   'cycl_hrs_stoch': [ $( printf "\'%s\', " "${CYCL_HRS_STOCH[@]}" ) ]
   'cycl_hrs_hyb_fv3lam_ens': [ $( printf "\'%s\', " "${CYCL_HRS_HYB_FV3LAM_ENS[@]}" ) ]
   'restart_hrs_prod': ${RESTART_INTERVAL}
+  'restart_hrs_prod_long': ${RESTART_INTERVAL_LONG}
   'cycl_freq': !!str 12:00:00
   'at_start_cycledef': ${AT_START_CYCLEDEF}
   'initial_cycledef': ${INITIAL_CYCLEDEF}
   'boundary_cycledef': ${BOUNDARY_CYCLEDEF}
   'boundary_long_cycledef': ${BOUNDARY_LONG_CYCLEDEF}
-  'ensfcst_cycledef': ${ENSFCST_CYCLEDEF}
   'spinup_cycledef': ${SPINUP_CYCLEDEF}
   'prod_cycledef': ${PROD_CYCLEDEF}
+  'prodlong_cycledef': ${PRODLONG_CYCLEDEF}
+  'saveda_cycledef': ${SAVEDA_CYCLEDEF}
   'recenter_cycledef': ${RECENTER_CYCLEDEF}
-  'postproc_long_cycledef': ${POSTPROC_LONG_CYCLEDEF}
   'archive_cycledef': ${ARCHIVE_CYCLEDEF}
 #
 # boundary, forecast, and post process length.
 #
   'fcst_len_hrs': ${FCST_LEN_HRS}
   'fcst_len_hrs_spinup': ${FCST_LEN_HRS_SPINUP}
-  'fcst_len_hrs_ensfcst': ${FCST_LEN_HRS_ENSFCST}
   'boundary_len_hrs': ${BOUNDARY_LEN_HRS}
   'boundary_long_len_hrs': ${BOUNDARY_LONG_LEN_HRS}
   'postproc_len_hrs': ${POSTPROC_LEN_HRS}
@@ -473,15 +489,20 @@ settings="\
   'do_ens_graphics': ${DO_ENS_GRAPHICS}
   'do_enspost': ${DO_ENSPOST}
   'do_ensinit': ${DO_ENSINIT}
+  'do_save_da_output': ${DO_SAVE_DA_OUTPUT}
+  'do_save_input': ${DO_SAVE_INPUT}
 #
 # data assimilation related parameters.
 #
   'do_dacycle': ${DO_DACYCLE}
+  'do_sddacycle': ${DO_SDDACYCLE}
   'do_surface_cycle': ${DO_SURFACE_CYCLE}
   'da_cycle_interval_hrs': ${DA_CYCLE_INTERV}
   'do_nonvar_cldanal': ${DO_NONVAR_CLDANAL}
   'do_refl2tten': ${DO_REFL2TTEN}
   'do_spinup': ${DO_SPINUP}
+  'do_post_spinup': ${DO_POST_SPINUP}
+  'do_post_prod': ${DO_POST_PROD}
   'do_nldn_lght': ${DO_NLDN_LGHT}
   'regional_ensemble_option': ${regional_ensemble_option}
   'radar_ref_thinning': ${RADAR_REF_THINNING}
@@ -698,6 +719,26 @@ if [ "${RUN_ENVIR}" = "nco" ]; then
   Please ensure that path_resolved is an existing directory and then rerun
   the experiment generation script."
   fi
+
+if [ "${DO_BUFRSND}" = "TRUE" ]; then
+#
+#
+# Resolve the target directory that the FIXbufrsnd symlink points to
+#
+  ln_vrfy -fsn "$FIX_BUFRSND" "$FIXbufrsnd"
+
+  path_resolved=$( readlink -m "$FIXbufrsnd" )
+  if [ ! -d "${path_resolved}" ]; then
+    print_err_msg_exit "\
+  Missing link to FIXsmokedust
+  RUN_ENVIR = \"${RUN_ENVIR}\"
+  FIXsmokedust = \"$FIXbufrsnd\"
+  path_resolved = \"${path_resolved}\"
+  Please ensure that path_resolved is an existing directory and then rerun
+  the experiment generation script."
+  fi
+fi
+
 #
 
   ln_vrfy -fsn "$FIXgsm" "$FIXam"

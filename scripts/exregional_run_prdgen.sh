@@ -224,22 +224,182 @@ fi
 # and hh are calculated above, i.e. start_date is just cdate but with a
 # space inserted between the dd and hh.  If so, just use "$yyyymmdd $hh"
 # instead of calling sed.
+
+gridname=""
+if [ ${PREDEF_GRID_NAME} = "RRFS_CONUS_3km" ]; then
+  gridname="conus_3km."
+elif  [ ${PREDEF_GRID_NAME} = "RRFS_NA_3km" ]; then
+  gridname=""
+fi
 basetime=$( date +%y%j%H%M -d "${yyyymmdd} ${hh}" )
 cp_vrfy ${bgdawp} ${comout}/${NET}.t${cyc}z.bgdawpf${fhr}.${tmmark}.grib2
 cp_vrfy ${bgrd3d} ${comout}/${NET}.t${cyc}z.bgrd3df${fhr}.${tmmark}.grib2
-cp_vrfy ${bgifi} ${comout}/${NET}.t${cyc}z.bgifif${fhr}.${tmmark}.grib2
+if [ -f  ${bgifi} ]; then
+  cp_vrfy ${bgifi} ${comout}/${NET}.t${cyc}z.bgifif${fhr}.${tmmark}.grib2
+fi
 cp_vrfy ${bgsfc}  ${comout}/${NET}.t${cyc}z.bgsfcf${fhr}.${tmmark}.grib2
 ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgdawpf${fhr}.${tmmark}.grib2 ${comout}/BGDAWP_${basetime}${post_fhr}
 ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgrd3df${fhr}.${tmmark}.grib2 ${comout}/BGRD3D_${basetime}${post_fhr}
-ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgifif${fhr}.${tmmark}.grib2 ${comout}/BGIFI_${basetime}${post_fhr}
+if [ -f ${comout}/${NET}.t${cyc}z.bgifif${fhr}.${tmmark}.grib2 ]; then
+  ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgifif${fhr}.${tmmark}.grib2 ${comout}/BGIFI_${basetime}${post_fhr}
+fi
 ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgsfcf${fhr}.${tmmark}.grib2  ${comout}/BGSFC_${basetime}${post_fhr}
 
 net4=$(echo ${NET:0:4} | tr '[:upper:]' '[:lower:]')
-ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgdawpf${fhr}.${tmmark}.grib2 ${comout}/${net4}.t${cyc}z.prslev.f${fhr}.conus_3km.grib2
-ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgrd3df${fhr}.${tmmark}.grib2 ${comout}/${net4}.t${cyc}z.natlev.f${fhr}.conus_3km.grib2
-ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgifif${fhr}.${tmmark}.grib2 ${comout}/${net4}.t${cyc}z.ififip.f${fhr}.conus_3km.grib2
-ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgsfcf${fhr}.${tmmark}.grib2  ${comout}/${net4}.t${cyc}z.testbed.f${fhr}.conus_3km.grib2
+ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgdawpf${fhr}.${tmmark}.grib2 ${comout}/${net4}.t${cyc}z.prslev.f${fhr}.${gridname}grib2
+wgrib2 ${comout}/${net4}.t${cyc}z.prslev.f${fhr}.${gridname}grib2 -s > ${comout}/${net4}.t${cyc}z.prslev.f${fhr}.${gridname}grib2.idx
+ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgrd3df${fhr}.${tmmark}.grib2 ${comout}/${net4}.t${cyc}z.natlev.f${fhr}.${gridname}grib2
+wgrib2 ${comout}/${net4}.t${cyc}z.natlev.f${fhr}.${gridname}grib2 -s > ${comout}/${net4}.t${cyc}z.natlev.f${fhr}.${gridname}grib2.idx
+if [ -f ${comout}/${NET}.t${cyc}z.bgifif${fhr}.${tmmark}.grib2 ]; then
+  ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgifif${fhr}.${tmmark}.grib2 ${comout}/${net4}.t${cyc}z.ififip.f${fhr}.${gridname}grib2
+  wgrib2 ${comout}/${net4}.t${cyc}z.ififip.f${fhr}.${gridname}grib2 -s > ${comout}/${net4}.t${cyc}z.ififip.f${fhr}.${gridname}grib2.idx
+fi
+ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgsfcf${fhr}.${tmmark}.grib2  ${comout}/${net4}.t${cyc}z.testbed.f${fhr}.${gridname}grib2
+wgrib2 ${comout}/${net4}.t${cyc}z.testbed.f${fhr}.${gridname}grib2 -s > ${comout}/${net4}.t${cyc}z.testbed.f${fhr}.${gridname}grib2.idx
 # Remap to additional output grids if requested
+
+if [ ${DO_PARALLEL_PRDGEN} == "TRUE" ]; then
+#
+#  parallel run wgrib2 for product generation
+#
+
+if [ ${PREDEF_GRID_NAME} = "RRFS_NA_3km" ]; then
+
+module load cfp/2.0.4
+DATA=$postprd_dir
+export DATA=$postprd_dir
+USHrrfs=$USHDIR/prdgen
+
+wgrib2 ${comout}/rrfs.t${cyc}z.prslev.f${fhr}.grib2 >& $DATA/prslevf${fhr}.txt
+
+# Create parm files for subsetting on the fly - do it for each forecast hour
+# 10 subpieces for North American grid
+sed -n -e '1,120p' $DATA/prslevf${fhr}.txt >& $DATA/namerica_1.txt
+sed -n -e '121,240p' $DATA/prslevf${fhr}.txt >& $DATA/namerica_2.txt
+sed -n -e '241,360p' $DATA/prslevf${fhr}.txt >& $DATA/namerica_3.txt
+sed -n -e '361,480p' $DATA/prslevf${fhr}.txt >& $DATA/namerica_4.txt
+sed -n -e '481,600p' $DATA/prslevf${fhr}.txt >& $DATA/namerica_5.txt
+sed -n -e '601,720p' $DATA/prslevf${fhr}.txt >& $DATA/namerica_6.txt
+sed -n -e '721,750p' $DATA/prslevf${fhr}.txt >& $DATA/namerica_7.txt
+sed -n -e '751,780p' $DATA/prslevf${fhr}.txt >& $DATA/namerica_8.txt
+sed -n -e '781,880p' $DATA/prslevf${fhr}.txt >& $DATA/namerica_9.txt
+sed -n -e '881,$p' $DATA/prslevf${fhr}.txt >& $DATA/namerica_10.txt
+
+# 4 subpieces for CONUS and Alaska grids
+sed -n -e '1,250p' $DATA/prslevf${fhr}.txt >& $DATA/conus_ak_1.txt
+sed -n -e '251,500p' $DATA/prslevf${fhr}.txt >& $DATA/conus_ak_2.txt
+sed -n -e '501,750p' $DATA/prslevf${fhr}.txt >& $DATA/conus_ak_3.txt
+sed -n -e '751,$p' $DATA/prslevf${fhr}.txt >& $DATA/conus_ak_4.txt
+
+# 2 subpieces for Hawaii and Puerto Rico grids
+sed -n -e '1,500p' $DATA/prslevf${fhr}.txt >& $DATA/hi_pr_1.txt
+sed -n -e '501,$p' $DATA/prslevf${fhr}.txt >& $DATA/hi_pr_2.txt
+
+mkdir -p $DATA/prdgen_conus_1
+mkdir -p $DATA/prdgen_conus_2
+mkdir -p $DATA/prdgen_conus_3
+mkdir -p $DATA/prdgen_conus_4
+mkdir -p $DATA/prdgen_ak_1
+mkdir -p $DATA/prdgen_ak_2
+mkdir -p $DATA/prdgen_ak_3
+mkdir -p $DATA/prdgen_ak_4
+mkdir -p $DATA/prdgen_hi_1
+mkdir -p $DATA/prdgen_hi_2
+mkdir -p $DATA/prdgen_pr_1
+mkdir -p $DATA/prdgen_pr_2
+mkdir -p $DATA/prdgen_namerica_1
+mkdir -p $DATA/prdgen_namerica_2
+mkdir -p $DATA/prdgen_namerica_3
+mkdir -p $DATA/prdgen_namerica_4
+mkdir -p $DATA/prdgen_namerica_5
+mkdir -p $DATA/prdgen_namerica_6
+mkdir -p $DATA/prdgen_namerica_7
+mkdir -p $DATA/prdgen_namerica_8
+mkdir -p $DATA/prdgen_namerica_9
+mkdir -p $DATA/prdgen_namerica_10
+
+echo "#!/bin/bash" > $DATA/poescript_${fhr}
+echo "export DATA=${DATA}" >> $DATA/poescript_${fhr}
+echo "export comout=${comout}" >> $DATA/poescript_${fhr}
+echo "$USHrrfs/rrfs_prdgen_subpiece.sh $fhr $cyc 1 conus ${DATA} ${comout} &" >> $DATA/poescript_${fhr}
+echo "$USHrrfs/rrfs_prdgen_subpiece.sh $fhr $cyc 2 conus ${DATA} ${comout} &" >> $DATA/poescript_${fhr}
+echo "$USHrrfs/rrfs_prdgen_subpiece.sh $fhr $cyc 3 conus ${DATA} ${comout} &" >> $DATA/poescript_${fhr}
+echo "$USHrrfs/rrfs_prdgen_subpiece.sh $fhr $cyc 4 conus ${DATA} ${comout} &" >> $DATA/poescript_${fhr}
+echo "$USHrrfs/rrfs_prdgen_subpiece.sh $fhr $cyc 1 ak ${DATA} ${comout} &" >> $DATA/poescript_${fhr}
+echo "$USHrrfs/rrfs_prdgen_subpiece.sh $fhr $cyc 2 ak ${DATA} ${comout} &" >> $DATA/poescript_${fhr}
+echo "$USHrrfs/rrfs_prdgen_subpiece.sh $fhr $cyc 3 ak ${DATA} ${comout} &" >> $DATA/poescript_${fhr}
+echo "$USHrrfs/rrfs_prdgen_subpiece.sh $fhr $cyc 4 ak ${DATA} ${comout} &" >> $DATA/poescript_${fhr}
+echo "$USHrrfs/rrfs_prdgen_subpiece.sh $fhr $cyc 1 hi ${DATA} ${comout} &" >> $DATA/poescript_${fhr}
+echo "$USHrrfs/rrfs_prdgen_subpiece.sh $fhr $cyc 2 hi ${DATA} ${comout} &" >> $DATA/poescript_${fhr}
+echo "$USHrrfs/rrfs_prdgen_subpiece.sh $fhr $cyc 1 pr ${DATA} ${comout} &" >> $DATA/poescript_${fhr}
+echo "$USHrrfs/rrfs_prdgen_subpiece.sh $fhr $cyc 2 pr ${DATA} ${comout} &" >> $DATA/poescript_${fhr}
+echo "$USHrrfs/rrfs_prdgen_subpiece.sh $fhr $cyc 1 namerica ${DATA} ${comout} &" >> $DATA/poescript_${fhr}
+echo "$USHrrfs/rrfs_prdgen_subpiece.sh $fhr $cyc 2 namerica ${DATA} ${comout} &" >> $DATA/poescript_${fhr}
+echo "$USHrrfs/rrfs_prdgen_subpiece.sh $fhr $cyc 3 namerica ${DATA} ${comout} &" >> $DATA/poescript_${fhr}
+echo "$USHrrfs/rrfs_prdgen_subpiece.sh $fhr $cyc 4 namerica ${DATA} ${comout} &" >> $DATA/poescript_${fhr}
+echo "$USHrrfs/rrfs_prdgen_subpiece.sh $fhr $cyc 5 namerica ${DATA} ${comout} &" >> $DATA/poescript_${fhr}
+echo "$USHrrfs/rrfs_prdgen_subpiece.sh $fhr $cyc 6 namerica ${DATA} ${comout} &" >> $DATA/poescript_${fhr}
+echo "$USHrrfs/rrfs_prdgen_subpiece.sh $fhr $cyc 7 namerica ${DATA} ${comout} &" >> $DATA/poescript_${fhr}
+echo "$USHrrfs/rrfs_prdgen_subpiece.sh $fhr $cyc 8 namerica ${DATA} ${comout} &" >> $DATA/poescript_${fhr}
+echo "$USHrrfs/rrfs_prdgen_subpiece.sh $fhr $cyc 9 namerica ${DATA} ${comout} &" >> $DATA/poescript_${fhr}
+echo "$USHrrfs/rrfs_prdgen_subpiece.sh $fhr $cyc 10 namerica ${DATA} ${comout} &" >> $DATA/poescript_${fhr}
+echo "wait" >> $DATA/poescript_${fhr}
+chmod 775 $DATA/poescript_${fhr}
+
+#
+# Execute the script
+#
+
+export CMDFILE=$DATA/poescript_${fhr}
+mpiexec -np 22 --cpu-bind core cfp $CMDFILE
+#export err=$?; err_chk
+
+# reassemble the output grids
+
+cat $DATA/prdgen_conus_1/conus_1.grib2 \
+    $DATA/prdgen_conus_2/conus_2.grib2 \
+    $DATA/prdgen_conus_3/conus_3.grib2 \
+    $DATA/prdgen_conus_4/conus_4.grib2 \
+    > ${comout}/rrfs.t${cyc}z.prslev.f${fhr}.conus_3km.grib2
+wgrib2 ${comout}/rrfs.t${cyc}z.prslev.f${fhr}.conus_3km.grib2 -s > ${comout}/rrfs.t${cyc}z.prslev.f${fhr}.conus_3km.grib2.idx
+
+cat $DATA/prdgen_ak_1/ak_1.grib2 \
+    $DATA/prdgen_ak_2/ak_2.grib2 \
+    $DATA/prdgen_ak_3/ak_3.grib2 \
+    $DATA/prdgen_ak_4/ak_4.grib2 \
+    > ${comout}/rrfs.t${cyc}z.prslev.f${fhr}.ak.grib2
+wgrib2 ${comout}/rrfs.t${cyc}z.prslev.f${fhr}.ak.grib2 -s > ${comout}/rrfs.t${cyc}z.prslev.f${fhr}.ak.grib2.idx
+
+cat $DATA/prdgen_hi_1/hi_1.grib2 \
+    $DATA/prdgen_hi_2/hi_2.grib2 \
+    > ${comout}/rrfs.t${cyc}z.prslev.f${fhr}.hi.grib2
+wgrib2 ${comout}/rrfs.t${cyc}z.prslev.f${fhr}.hi.grib2 -s > ${comout}/rrfs.t${cyc}z.prslev.f${fhr}.hi.grib2.idx
+
+cat $DATA/prdgen_pr_1/pr_1.grib2 \
+    $DATA/prdgen_pr_2/pr_2.grib2 \
+    > ${comout}/rrfs.t${cyc}z.prslev.f${fhr}.pr.grib2
+wgrib2 ${comout}/rrfs.t${cyc}z.prslev.f${fhr}.pr.grib2 -s > ${comout}/rrfs.t${cyc}z.prslev.f${fhr}.pr.grib2.idx
+
+cat $DATA/prdgen_namerica_1/namerica_1.grib2 \
+    $DATA/prdgen_namerica_2/namerica_2.grib2 \
+    $DATA/prdgen_namerica_3/namerica_3.grib2 \
+    $DATA/prdgen_namerica_4/namerica_4.grib2 \
+    $DATA/prdgen_namerica_5/namerica_5.grib2 \
+    $DATA/prdgen_namerica_6/namerica_6.grib2 \
+    $DATA/prdgen_namerica_7/namerica_7.grib2 \
+    $DATA/prdgen_namerica_8/namerica_8.grib2 \
+    $DATA/prdgen_namerica_9/namerica_9.grib2 \
+    $DATA/prdgen_namerica_10/namerica_10.grib2 \
+    > ${comout}/rrfs.t${cyc}z.prslev.f${fhr}.namerica.grib2
+wgrib2 ${comout}/rrfs.t${cyc}z.prslev.f${fhr}.namerica.grib2 -s > ${comout}/rrfs.t${cyc}z.prslev.f${fhr}.namerica.grib2.idx
+
+else
+  echo "this grid is not ready for parallel prdgen: ${PREDEF_GRID_NAME}"
+fi
+else
+#
+# use single core to process all addition grids.
+#
 if [ ${#ADDNL_OUTPUT_GRIDS[@]} -gt 0 ]; then
 
   cd_vrfy ${comout}
@@ -294,19 +454,23 @@ if [ ${#ADDNL_OUTPUT_GRIDS[@]} -gt 0 ]; then
       cp_vrfy ${bg_remap} ${comout}/${grid}_grid/${NET}.t${cyc}z.bg${leveltype}f${fhr}.${tmmark}.grib2
 
       if [ $leveltype = 'dawp' ]; then
-         ln_vrfy -fs --relative ${comout}/${grid}_grid/${NET}.t${cyc}z.bg${leveltype}f${fhr}.${tmmark}.grib2 ${comout}/${net4}.t${cyc}z.prslev.f${fhr}.conus_3km.grib2
+         ln_vrfy -fs --relative ${comout}/${grid}_grid/${NET}.t${cyc}z.bg${leveltype}f${fhr}.${tmmark}.grib2 ${comout}/${net4}.t${cyc}z.prslev.f${fhr}.${gridname}grib2
+         wgrib2 ${comout}/${net4}.t${cyc}z.prslev.f${fhr}.${gridname}grib2 -s > ${comout}/${net4}.t${cyc}z.prslev.f${fhr}.${gridname}grib2.idx
       fi
 
       if [ $leveltype = 'rd3d' ]; then
-         ln_vrfy -fs --relative ${comout}/${grid}_grid/${NET}.t${cyc}z.bg${leveltype}f${fhr}.${tmmark}.grib2 ${comout}/${net4}.t${cyc}z.natlev.f${fhr}.conus_3km.grib2
+         ln_vrfy -fs --relative ${comout}/${grid}_grid/${NET}.t${cyc}z.bg${leveltype}f${fhr}.${tmmark}.grib2 ${comout}/${net4}.t${cyc}z.natlev.f${fhr}.${gridname}grib2
+         wgrib2 ${comout}/${net4}.t${cyc}z.natlev.f${fhr}.${gridname}grib2 -s > ${comout}/${net4}.t${cyc}z.natlev.f${fhr}.${gridname}grib2.idx
       fi
 
-      if [ $leveltype = 'ifi' ]; then
-         ln_vrfy -fs --relative ${comout}/${grid}_grid/${NET}.t${cyc}z.bg${leveltype}f${fhr}.${tmmark}.grib2 ${comout}/${net4}.t${cyc}z.ififip.f${fhr}.conus_3km.grib2
+      if [[ $leveltype = 'ifi' ]] && [[ -f ${comout}/${grid}_grid/${NET}.t${cyc}z.bg${leveltype}f${fhr}.${tmmark}.grib2  ]]; then
+         ln_vrfy -fs --relative ${comout}/${grid}_grid/${NET}.t${cyc}z.bg${leveltype}f${fhr}.${tmmark}.grib2 ${comout}/${net4}.t${cyc}z.ififip.f${fhr}.${gridname}grib2
+         wgrib2 ${comout}/${net4}.t${cyc}z.ififip.f${fhr}.${gridname}grib2 -s > ${comout}/${net4}.t${cyc}z.ififip.f${fhr}.${gridname}grib2.idx
       fi
 
       if [ $leveltype = 'sfc' ]; then
-         ln_vrfy -fs --relative ${comout}/${grid}_grid/${NET}.t${cyc}z.bg${leveltype}f${fhr}.${tmmark}.grib2 ${comout}/${net4}.t${cyc}z.testbed.f${fhr}.conus_3km.grib2
+         ln_vrfy -fs --relative ${comout}/${grid}_grid/${NET}.t${cyc}z.bg${leveltype}f${fhr}.${tmmark}.grib2 ${comout}/${net4}.t${cyc}z.testbed.f${fhr}.${gridname}grib2
+         wgrib2 ${comout}/${net4}.t${cyc}z.testbed.f${fhr}.${gridname}grib2 -s > ${comout}/${net4}.t${cyc}z.testbed.f${fhr}.${gridname}grib2.idx
       fi
 
       # Link output for transfer from Jet to web
@@ -314,6 +478,8 @@ if [ ${#ADDNL_OUTPUT_GRIDS[@]} -gt 0 ]; then
     done
   done
 fi
+
+fi  # block for parallel or series wgrib2 runs.
 
 rm_vrfy -rf ${fhr_dir}
 #

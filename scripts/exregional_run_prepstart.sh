@@ -139,6 +139,7 @@ MM=${YYYYMMDDHH:4:2}
 DD=${YYYYMMDDHH:6:2}
 HH=${YYYYMMDDHH:8:2}
 YYYYMMDD=${YYYYMMDDHH:0:8}
+YYYYJJJHH=${YYYY}${JJJ}${HH}
 
 current_time=$(date "+%T")
 
@@ -151,8 +152,47 @@ YYYYMMDDm2=$(date +%Y%m%d -d "${START_DATE} 2 days ago")
 YYJJJ00000000=`date +"%y%j00000000" -d "${START_DATE} 1 day ago"`
 YYJJJ1200=`date +"%y%j1200" -d "${START_DATE} 1 day ago"`
 YYJJJ2200000000=`date +"%y%j2200000000" -d "${START_DATE} 1 day ago"`
+
 #
 #-----------------------------------------------------------------------
+#
+# go to INPUT directory.
+# prepare initial conditions for ensemble free forecast after ensemble DA
+#
+#-----------------------------------------------------------------------
+if [ ${DO_ENSFCST} = "TRUE" ] &&  [ ${DO_ENKFUPDATE} = "TRUE" ]; then
+  cd_vrfy ${modelinputdir}
+  bkpath=${fg_root}/${YYYYMMDDHH}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam/DA_OUTPUT  # use DA analysis from DA_OUTPUT
+  filelistn="fv_core.res.tile1.nc fv_srf_wnd.res.tile1.nc fv_tracer.res.tile1.nc phy_data.nc sfc_data.nc"
+  checkfile=${bkpath}/coupler.res
+  n_iolayouty=$(($IO_LAYOUT_Y-1))
+  list_iolayout=$(seq 0 $n_iolayouty)
+  if [ -r "${checkfile}" ] ; then
+    cp_vrfy ${bkpath}/coupler.res                coupler.res
+    cp_vrfy ${bkpath}/gfs_ctrl.nc  gfs_ctrl.nc
+    cp_vrfy ${bkpath}/fv_core.res.nc             fv_core.res.nc
+    if [ "${IO_LAYOUT_Y}" == "1" ]; then
+      for file in ${filelistn}; do
+        cp_vrfy ${bkpath}/${file}     ${file}
+      done
+    else
+      for file in ${filelistn}; do
+         for ii in $list_iolayout
+         do
+           iii=$(printf %4.4i $ii)
+           cp_vrfy ${bkpath}/${file}.${iii}     ${file}.${iii}
+         done
+      done
+    fi
+  else
+    print_err_msg_exit "Error: can not find ensemble DA analysis output for running ensemble free forecast, \
+  check ${bkpath} for needed files."
+  fi
+  SFC_CYC=0
+#
+#-----------------------------------------------------------------------
+#
+else
 #
 # go to INPUT directory.
 # prepare initial conditions for 
@@ -342,6 +382,7 @@ else
       for file in ${filelistn}; do
         ncatted -a checksum,,d,, ${file}
       done
+      ncatted -O -a source,global,c,c,'FV3GFS GAUSSIAN NETCDF FILE' fv_core.res.tile1.nc
     else
       for file in ${filelistn}; do
         for ii in $list_iolayout
@@ -349,6 +390,11 @@ else
           iii=$(printf %4.4i $ii)
           ncatted -a checksum,,d,, ${file}.${iii}
         done
+      done
+      for ii in $list_iolayout
+      do
+        iii=$(printf %4.4i $ii)
+        ncatted -O -a source,global,c,c,'FV3GFS GAUSSIAN NETCDF FILE' fv_core.res.tile1.nc.${iii}
       done
     fi
     ncatted -a checksum,,d,, fv_core.res.nc
@@ -670,8 +716,8 @@ fi
 #
 #-----------------------------------------------------------------------
 if [ ${HH} -eq ${GVF_update_hour} ] && [ ${cycle_type} == "spinup" ]; then
-   latestGVF=$(ls ${GVF_ROOT}/GVF-WKL-GLB_v2r3_npp_s*_e${YYYYMMDDm1}_c${YYYYMMDD}*.grib2)
-   latestGVF2=$(ls ${GVF_ROOT}/GVF-WKL-GLB_v2r3_npp_s*_e${YYYYMMDDm2}_c${YYYYMMDDm1}*.grib2)
+   latestGVF=$(ls ${GVF_ROOT}/GVF-WKL-GLB_v?r?_npp_s*_e${YYYYMMDDm1}_c${YYYYMMDD}*.grib2)
+   latestGVF2=$(ls ${GVF_ROOT}/GVF-WKL-GLB_v?r?_npp_s*_e${YYYYMMDDm2}_c${YYYYMMDDm1}*.grib2)
    if [ ! -r "${latestGVF}" ]; then
      if [ -r "${latestGVF2}" ]; then
        latestGVF=${latestGVF2}
@@ -704,6 +750,8 @@ if [ ${HH} -eq ${GVF_update_hour} ] && [ ${cycle_type} == "spinup" ]; then
          echo "${YYYYMMDDHH}(${cycle_type}): update GVF with ${latestGVF} " >> ${EXPTDIR}/log.cycles
       fi
    fi
+fi
+
 fi
 #-----------------------------------------------------------------------
 #
@@ -872,24 +920,44 @@ fi
 #
 #-----------------------------------------------------------------------
 #
-if [ "${USE_FVCOM}" = "TRUE" ]; then
+if [ "${USE_FVCOM}" = "TRUE" ] && [ ${SFC_CYC} -eq 2 ] ; then
 
-  set -x
-  latest_fvcom_file="${FVCOM_DIR}/${FVCOM_FILE}"
-  if [ ${HH} -gt 12 ]; then 
-    starttime_fvcom="$(date +%Y%m%d -d "${START_DATE}") 12"
+# Remap the FVCOM output from the 5 lakes onto the RRFS grid
+  if [ "${PREP_FVCOM}" = "TRUE" ]; then
+    ${SCRIPTSDIR}/exregional_prep_fvcom.sh \
+                  modelinputdir="${modelinputdir}" \
+                  FIXLAM="${FIXLAM}" \
+                  FVCOM_DIR="${FVCOM_DIR}" \
+	          YYYYJJJHH="${YYYYJJJHH}" \
+                  YYYYMMDD="${YYYYMMDD}" \
+                  YYYYMMDDm1="${YYYYMMDDm1}" \
+                  HH="${HH}" || \
+    print_err_msg_exit "\
+    Call to ex-script failed."
+
+    cd_vrfy ${modelinputdir}
+# FVCOM_DIR needs to be redefined here to find 
+    FVCOM_DIR=${modelinputdir}/fvcom_remap
+    latest_fvcom_file="${FVCOM_DIR}/${FVCOM_FILE}"
+    fvcomtime=${YYYYJJJHH}
+    fvcom_data_fp="${latest_fvcom_file}_${fvcomtime}.nc"
   else
-    starttime_fvcom="$(date +%Y%m%d -d "${START_DATE}") 00"
+    latest_fvcom_file="${FVCOM_DIR}/${FVCOM_FILE}"
+    if [ ${HH} -gt 12 ]; then 
+      starttime_fvcom="$(date +%Y%m%d -d "${START_DATE}") 12"
+    else
+      starttime_fvcom="$(date +%Y%m%d -d "${START_DATE}") 00"
+    fi
+    for ii in $(seq 0 3)
+    do
+       jumphour=$((${ii} * 12))
+       fvcomtime=$(date +%Y%j%H -d "${starttime_fvcom}  ${jumphour} hours ago")
+       fvcom_data_fp="${latest_fvcom_file}_${fvcomtime}.nc"
+       if [ -f "${fvcom_data_fp}" ]; then
+         break 
+       fi
+    done
   fi
-  for ii in $(seq 0 3)
-  do
-     jumphour=$((${ii} * 12))
-     fvcomtime=$(date +%Y%j%H -d "${starttime_fvcom}  ${jumphour} hours ago")
-     fvcom_data_fp="${latest_fvcom_file}_${fvcomtime}.nc"
-     if [ -f "${fvcom_data_fp}" ]; then
-       break 
-     fi
-  done
 
   if [ ! -f "${fvcom_data_fp}" ]; then
     print_info_msg "\

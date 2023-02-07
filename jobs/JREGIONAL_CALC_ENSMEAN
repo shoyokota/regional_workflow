@@ -3,12 +3,12 @@
 #
 #-----------------------------------------------------------------------
 #
-# This script runs wgrib2 to create various subdomain GRIB2 files from
-# the raw UPP-generated GRIB2 output from the run_post task of the
-# FV3-LAM model.
+# This J-JOB script stages initial and boundary conditions for
+#      the analysis and model of the cycle it is running. The initial
+#      could come from external model or previous cycles forecast.
+#      The boundary could come from previous many cycles.
 #
 #-----------------------------------------------------------------------
-#
 
 #
 #-----------------------------------------------------------------------
@@ -27,7 +27,7 @@
 #
 #-----------------------------------------------------------------------
 #
-{ save_shell_opts; set -u -x; } > /dev/null 2>&1
+{ save_shell_opts; set -u +x; } > /dev/null 2>&1
 #
 #-----------------------------------------------------------------------
 #
@@ -52,63 +52,28 @@ print_info_msg "
 Entering script:  \"${scrfunc_fn}\"
 In directory:     \"${scrfunc_dir}\"
 
-This is the J-job script for the task that runs wgrib2 on the output
-files corresponding to a specified forecast hour.
+This is the J-job script for the task that runs a analysis with FV3 for 
+the specified cycle.
 ========================================================================"
 #
 #-----------------------------------------------------------------------
 #
-# Set the run directory.
+# Create the working directory under the cycle directory.
 #
 #-----------------------------------------------------------------------
+#
 # CYCLE_TYPE is to indicate which type of cycle this job for:
 #   spinup: this job is for spin-up cycles
 #   others(prod): this job is for product cycle
 #
 CYCLE_TYPE=${CYCLE_TYPE:-prod}
 if [ ${CYCLE_TYPE} == "spinup" ]; then
-  run_dir="${CYCLE_DIR}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam_spinup"
+  ensmeandir=${CYCLE_DIR}/ensmean/fcst_fv3lam_spinup/INPUT
 else
-  run_dir="${CYCLE_DIR}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam"
+  ensmeandir=${CYCLE_DIR}/ensmean/fcst_fv3lam/INPUT
 fi
-
-#
-#-----------------------------------------------------------------------
-#
-# If it doesn't already exist, create the directory (postprd_dir) in which 
-# to store post-processing output.  (Note that postprd_dir may already 
-# have been created by this post-processing script run for a different 
-# forecast hour of the same cycle and/or ensemble member.)  Also, create 
-# a temporary work directory (fhr_dir) for the current forecast hour.  
-# fhr_dir will be deleted later after the processing for the current 
-# forecast hour is complete.  Then change location to fhr_dir.
-#
-# Note that there may be a preexisting version of fhr_dir from previous 
-# runs of this script for the current forecast hour (and current cycle), 
-# e.g. from the workflow task that runs this script failing and then being 
-# called again.  Thus, we first make sure preexisting versions are deleted.
-#
-#-----------------------------------------------------------------------
-#
-if [ "${RUN_ENVIR}" = "nco" ]; then
-  COMOUT="${COMOUT_BASEDIR}/$RUN.$PDY/$cyc${SLASH_ENSMEM_SUBDIR}"
-  if [ ${CYCLE_TYPE} == "spinup" ]; then
-    COMOUT="${COMOUT_BASEDIR}/$RUN.$PDY/${cyc}_spinup${SLASH_ENSMEM_SUBDIR}"
-  fi
-  mkdir_vrfy -p "${COMOUT}"
-fi
-
-postprd_dir="${CYCLE_DIR}${SLASH_ENSMEM_SUBDIR}/postprd"
-if [ ${CYCLE_TYPE} == "spinup" ]; then
-  postprd_dir="${CYCLE_DIR}${SLASH_ENSMEM_SUBDIR}/postprd_spinup"
-fi
-mkdir_vrfy -p "${postprd_dir}"
-
-fhr_dir="${postprd_dir}/$fhr"
-check_for_preexist_dir_file "${fhr_dir}" "delete"
-mkdir_vrfy -p "${fhr_dir}"
-
-cd_vrfy "${fhr_dir}"
+rm -fr ${ensmeandir}
+mkdir_vrfy -p ${ensmeandir}
 #
 #-----------------------------------------------------------------------
 #
@@ -117,14 +82,9 @@ cd_vrfy "${fhr_dir}"
 #
 #-----------------------------------------------------------------------
 #
-$SCRIPTSDIR/exregional_run_wgrib2.sh \
-  cdate="${CDATE}" \
-  run_dir="${run_dir}" \
-  postprd_dir="${postprd_dir}" \
-  comout="${COMOUT}" \
-  fhr_dir="${fhr_dir}" \
-  fhr="${fhr}" \
-  tmmark="${TMMARK}" || \
+$SCRIPTSDIR/exregional_calc_ensmean.sh \
+             cycle_type="${CYCLE_TYPE}" \
+             ensmeandir="${ensmeandir}" || \
 print_err_msg_exit "\
 Call to ex-script corresponding to J-job \"${scrfunc_fn}\" failed."
 #

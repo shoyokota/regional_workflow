@@ -169,7 +169,7 @@ cp_vrfy $BUFR_TABLE prepobs_prep.bufrtable
 #   set observation soruce 
 #
 #-----------------------------------------------------------------------
-if [[ "${NET}" = "RTMA"* ]]; then
+if [[ "${NET}" = "RTMA"* ]] && [[ "${RTMA_OBS_FEED}" = "NCO" ]]; then
   SUBH=$(date +%M -d "${START_DATE}")
   obs_source="rtma_ru"
   obsfileprefix=${obs_source}
@@ -307,7 +307,7 @@ fi
 #                   = 1 for FV3LAM
 #-----------------------------------------------------------------------
 
-if [ ${PREDEF_GRID_NAME} == "GSD_RAP13km" ]; then
+if [ ${PREDEF_GRID_NAME} == "GSD_RAP13km" ] || [ ${PREDEF_GRID_NAME} == "RRFS_CONUS_13km" ] ; then
    npts_rad_number=1
    metar_impact_radius_number=9
 else

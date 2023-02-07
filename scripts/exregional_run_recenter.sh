@@ -83,7 +83,7 @@ case $MACHINE in
   export OMP_STACKSIZE=500M
   export OMP_NUM_THREADS=1
   ncores=$(( NNODES_RUN_RECENTER*PPN_RUN_RECENTER ))
-  APRUN="mpiexec -n ${ncores} -ppn ${PPN_RUN_RECENTER} --cpu-bind core --depth ${OMP_NUM_THREADS}"
+  APRUN="mpiexec -n 93 -ppn ${PPN_RUN_RECENTER} --cpu-bind core --depth ${OMP_NUM_THREADS}"
   ;;
 #
 "THEIA")
@@ -174,9 +174,9 @@ for imem in  $(seq 1 $nens)
   dynvarfile=${bkpath}/fv_core.res.tile1.nc
   tracerfile=${bkpath}/fv_tracer.res.tile1.nc
   if [ -r "${dynvarfile}" ] && [ -r "${tracerfile}" ] ; then
-    cp_vrfy ${bkpath}/fv_core.res.tile1.nc  ./fv3sar_tile1_mem${memberstring}_dynvar
-    cp_vrfy ${bkpath}/fv_tracer.res.tile1.nc   ./fv3sar_tile1_mem${memberstring}_tracer
-    cp_vrfy ${bkpath}/sfc_data.nc  ./fv3sar_tile1_mem${memberstring}_sfcvar
+    ln -sf ${bkpath}/fv_core.res.tile1.nc  ./fv3sar_tile1_mem${memberstring}_dynvar
+    ln -sf ${bkpath}/fv_tracer.res.tile1.nc   ./fv3sar_tile1_mem${memberstring}_tracer
+    ln -sf ${bkpath}/sfc_data.nc  ./fv3sar_tile1_mem${memberstring}_sfcvar
     ln -sf ${bkpath}/fv_core.res.tile1.nc  ./rec_fv3sar_tile1_mem${memberstring}_dynvar
     ln -sf ${bkpath}/fv_tracer.res.tile1.nc   ./rec_fv3sar_tile1_mem${memberstring}_tracer
     ln -sf ${bkpath}/sfc_data.nc  ./rec_fv3sar_tile1_mem${memberstring}_sfcvar

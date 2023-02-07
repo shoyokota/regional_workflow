@@ -84,8 +84,8 @@ case $MACHINE in
   ulimit -s unlimited
   ulimit -a
   export FI_OFI_RXM_SAR_LIMIT=3145728
-  export OMP_STACKSIZE=500M
-  export OMP_NUM_THREADS=1
+  export OMP_STACKSIZE=1G
+  export OMP_NUM_THREADS=${TPP_RUN_ANAL}
   ncores=$(( NNODES_RUN_ANAL*PPN_RUN_ANAL))
   APRUN="mpiexec -n ${ncores} -ppn ${PPN_RUN_ANAL} --cpu-bind core --depth ${OMP_NUM_THREADS}"
   ;;
@@ -185,9 +185,10 @@ if [ -r "${bkpath}/coupler.res" ]; then
   BKTYPE=0              # warm start
 else
   BKTYPE=1              # cold start
+  regional_ensemble_option=1
 fi
 
-if  [ ${ob_type} != "conv" ]; then #not using GDAS
+if  [ ${ob_type} != "conv" ] || [ ${BKTYPE} -eq 1 ]; then #not using GDAS
   l_both_fv3sar_gfs_ens=.false.
 fi
 
@@ -202,7 +203,7 @@ echo "regional_ensemble_option is ",${regional_ensemble_option:-1}
 print_info_msg "$VERBOSE" "FIX_GSI is $FIX_GSI"
 print_info_msg "$VERBOSE" "fixgriddir is $fixgriddir"
 print_info_msg "$VERBOSE" "default bkpath is $bkpath"
-print_info_msg "$VERBOSE" "background type is is $BKTYPE"
+print_info_msg "$VERBOSE" "background type is $BKTYPE"
 
 #
 # Check if we have enough FV3-LAM ensembles when regional_ensemble_option=5
@@ -211,7 +212,7 @@ if  [[ ${regional_ensemble_option:-1} -eq 5 ]]; then
   ens_nstarthr=$( printf "%02d" ${DA_CYCLE_INTERV} )
   imem=1
   ifound=0
-  for hrs in ${CYCL_HRS_HYB_FV3LAM_ENS}; do
+  for hrs in ${CYCL_HRS_HYB_FV3LAM_ENS[@]}; do
   if [ $HH == ${hrs} ]; then
 
   while [[ $imem -le ${NUM_ENS_MEMBERS} ]];do
@@ -223,7 +224,7 @@ if  [[ ${regional_ensemble_option:-1} -eq 5 ]]; then
     slash_ensmem_subdir=$memchar
     bkpathmem=${rrfse_fg_root}/${YYYYMMDDHHmInterv}/${slash_ensmem_subdir}/fcst_fv3lam/RESTART
     if [ ${DO_SPINUP} == "TRUE" ]; then
-      for cycl_hrs in ${CYCL_HRS_PRODSTART_ENS}; do
+      for cycl_hrs in ${CYCL_HRS_PRODSTART_ENS[@]}; do
        if [ $HH == ${cycl_hrs} ]; then
          bkpathmem=${rrfse_fg_root}/${YYYYMMDDHHmInterv}/${slash_ensmem_subdir}/fcst_fv3lam_spinup/RESTART
        fi
@@ -246,7 +247,7 @@ if  [[ ${regional_ensemble_option:-1} -eq 5 ]]; then
   fi
   done
 
-  if [[ $ifound -ne ${NUM_ENS_MEMBERS} ]]; then
+  if [[ $ifound -ne ${NUM_ENS_MEMBERS} ]] || [[ ${BKTYPE} -eq 1 ]]; then
     print_info_msg "Not enough FV3_LAM ensembles, will fall to GDAS"
     regional_ensemble_option=1
     l_both_fv3sar_gfs_ens=.false.
@@ -356,6 +357,8 @@ if_model_dbz=.false.
 nummem_gfs=0
 nummem_fv3sar=0
 anav_type=${ob_type}
+i_use_2mQ4B=2
+i_use_2mT4B=1
 
 # Determine if hybrid option is available
 memname='atmf009'
@@ -370,6 +373,7 @@ if [ ${regional_ensemble_option:-1} -eq 5 ]  && [ ${BKTYPE} != 1  ]; then
   print_info_msg "$VERBOSE" "Do hybrid with FV3LAM ensemble"
   ifhyb=.true.
   print_info_msg "$VERBOSE" " Cycle ${YYYYMMDDHH}: GSI hybrid uses FV3LAM ensemble with n_ens=${nummem}" 
+  echo " ${YYYYMMDDHH}(${cycle_type}): GSI hybrid uses FV3LAM ensemble with n_ens=${nummem}" >> ${EXPTDIR}/log.cycles
   grid_ratio_ens="1"
   ens_fast_read=.true.
 else    
@@ -380,9 +384,11 @@ else
     print_info_msg "$VERBOSE" "Do hybrid with ${memname}"
     ifhyb=.true.
     print_info_msg "$VERBOSE" " Cycle ${YYYYMMDDHH}: GSI hybrid uses ${memname} with n_ens=${nummem}"
+    echo " ${YYYYMMDDHH}(${cycle_type}): GSI hybrid uses ${memname} with n_ens=${nummem}" >> ${EXPTDIR}/log.cycles
   else
     print_info_msg "$VERBOSE" " Cycle ${YYYYMMDDHH}: GSI does pure 3DVAR."
     print_info_msg "$VERBOSE" " Hybrid needs at least ${HYBENSMEM_NMIN} ${memname} ensembles, only ${nummem} available"
+    echo " ${YYYYMMDDHH}(${cycle_type}): GSI dose pure 3DVAR" >> ${EXPTDIR}/log.cycles
   fi
   if [[ ${anav_type} == "all" ]]; then
     anav_type="conv"
@@ -460,7 +466,7 @@ sed -i "s/hh/${HH}/"     coupler.res
 # copy observation files to working directory 
 #
 #-----------------------------------------------------------------------
-if [[ "${NET}" = "RTMA"* ]]; then
+if [[ "${NET}" = "RTMA"* ]] && [[ "${RTMA_OBS_FEED}" = "NCO" ]]; then
   SUBH=$(date +%M -d "${START_DATE}")
   obs_source="rtma_ru"
   obsfileprefix=${obs_source}
@@ -529,6 +535,12 @@ else
     fi
     obs_files_target[0]=dbzobs.nc
 
+  fi
+
+
+  if [ ${anav_type} == "AERO" ]; then
+    obs_files_source[0]=${OBSPATH_PM}/${YYYYMMDD}/pm25.airnow.${YYYYMMDD}${HH}.bufr
+    obs_files_target[0]=pm25bufr
   fi
 
 fi
@@ -673,6 +685,32 @@ CONVINFO=${FIX_GSI}/${CONVINFO_FN}
 HYBENSINFO=${FIX_GSI}/${HYBENSINFO_FN}
 OBERROR=${FIX_GSI}/${OBERROR_FN}
 BERROR=${FIX_GSI}/${BERROR_FN}
+
+
+if [[ ${gsi_type} == "ANALYSIS" && ${anav_type} == "AERO" ]]; then
+  if [ ${BKTYPE} -eq 1 ]; then
+    echo "cold start, skip GSI SD DA"
+    exit 0
+  fi
+  ANAVINFO=${FIX_GSI}/${ANAVINFO_SD_FN}
+  CONVINFO=${FIX_GSI}/${CONVINFO_SD_FN}
+  BERROR=${FIX_GSI}/${BERROR_SD_FN}
+  miter=1
+  niter1=100
+  niter2=0
+  ifhyb=.false.
+  ifsd_da=.true.
+  l_hyb_ens=.false.
+  nummem=0
+  beta1_inv=0.0
+  i_use_2mQ4B=0
+  i_use_2mT4B=0
+  netcdf_diag=.true.
+  binary_diag=.false.
+  usenewgfsberror=.false.
+  laeroana_fv3smoke=.true.
+  berror_fv3_cmaq_regional=.true.
+fi
 
 SATINFO=${FIX_GSI}/global_satinfo.txt
 OZINFO=${FIX_GSI}/global_ozinfo.txt
@@ -833,6 +871,16 @@ if [ ${DO_RADDA} == "TRUE" ]; then
 fi
 
 #-----------------------------------------------------------------------
+# skip radar reflectivity analysis if no RRFSE ensemble
+#-----------------------------------------------------------------------
+
+if [[ ${gsi_type} == "ANALYSIS" && ${anav_type} == "radardbz" ]]; then
+  if  [[ ${regional_ensemble_option:-1} -eq 1 ]]; then
+     echo "No RRFSE ensemble available, cannot do radar reflectivity analysis"
+     exit 0
+  fi
+fi
+#-----------------------------------------------------------------------
 #
 # Build the GSI namelist on-the-fly
 #    most configurable paramters take values from settings in config.sh
@@ -872,6 +920,11 @@ EOF
 #
 gsi_exec="${EXECDIR}/gsi.x"
 
+if [[ ${gsi_type} == "ANALYSIS" && ${anav_type} == "AERO" ]]; then
+  gsi_exec="${EXECDIR}/gsi.x.sd"
+fi
+
+
 if [ -f $gsi_exec ]; then
   print_info_msg "$VERBOSE" "
 Copying the GSI executable to the run directory..."
@@ -900,19 +953,30 @@ fi
 #-----------------------------------------------------------------------
 #
 # comment out for testing
+
 $APRUN ./gsi.x < gsiparm.anl > stdout 2>&1 || print_err_msg_exit "\
 Call to executable to run GSI returned with nonzero exit code."
 
-mv fort.207 fit_rad1
-sed -e 's/   asm all/ps asm 900/; s/   rej all/ps rej 900/; s/   mon all/ps mon 900/' fort.201 > fit_p1
-sed -e 's/   asm all/uv asm 900/; s/   rej all/uv rej 900/; s/   mon all/uv mon 900/' fort.202 > fit_w1
-sed -e 's/   asm all/ t asm 900/; s/   rej all/ t rej 900/; s/   mon all/ t mon 900/' fort.203 > fit_t1
-sed -e 's/   asm all/ q asm 900/; s/   rej all/ q rej 900/; s/   mon all/ q mon 900/' fort.204 > fit_q1
-sed -e 's/   asm all/pw asm 900/; s/   rej all/pw rej 900/; s/   mon all/pw mon 900/' fort.205 > fit_pw1
-sed -e 's/   asm all/rw asm 900/; s/   rej all/rw rej 900/; s/   mon all/rw mon 900/' fort.209 > fit_rw1
+if [ ${anav_type} == "radardbz" ]; then
+  cat fort.238 > $comout/rrfs_a.t${HH}z.fits3.tm00
+else
+  mv fort.207 fit_rad1
+  sed -e 's/   asm all/ps asm 900/; s/   rej all/ps rej 900/; s/   mon all/ps mon 900/' fort.201 > fit_p1
+  sed -e 's/   asm all/uv asm 900/; s/   rej all/uv rej 900/; s/   mon all/uv mon 900/' fort.202 > fit_w1
+  sed -e 's/   asm all/ t asm 900/; s/   rej all/ t rej 900/; s/   mon all/ t mon 900/' fort.203 > fit_t1
+  sed -e 's/   asm all/ q asm 900/; s/   rej all/ q rej 900/; s/   mon all/ q mon 900/' fort.204 > fit_q1
+  sed -e 's/   asm all/pw asm 900/; s/   rej all/pw rej 900/; s/   mon all/pw mon 900/' fort.205 > fit_pw1
+  sed -e 's/   asm all/rw asm 900/; s/   rej all/rw rej 900/; s/   mon all/rw mon 900/' fort.209 > fit_rw1
 
-cat fit_p1 fit_w1 fit_t1 fit_q1 fit_pw1 fit_rad1 fit_rw1 > $comout/rrfs_a.t${HH}z.fits.tm00
-cat fort.208 fort.210 fort.211 fort.212 fort.213 fort.220 > $comout/rrfs_a.t${HH}z.fits2.tm00
+  cat fit_p1 fit_w1 fit_t1 fit_q1 fit_pw1 fit_rad1 fit_rw1 > $comout/rrfs_a.t${HH}z.fits.tm00
+  cat fort.208 fort.210 fort.211 fort.212 fort.213 fort.220 > $comout/rrfs_a.t${HH}z.fits2.tm00
+  if [ ${gsi_type} == "OBSERVER" ]; then
+    cat fort.238 > $comout/rrfs_a.t${HH}z.fits3.tm00
+  fi
+
+fi
+
+cp stdout $comout/stdout_${anav_type}
 #
 #-----------------------------------------------------------------------
 #
@@ -984,15 +1048,15 @@ if [ $binary_diag = ".true." ]; then
 fi
 
 if [ $netcdf_diag = ".true." ]; then
+   nc_diag_cat="nc_diag_cat.x"
    listall_cnv="conv_ps conv_q conv_t conv_uv conv_pw conv_rw conv_sst conv_dbz"
    listall_rad="hirs2_n14 msu_n14 sndr_g08 sndr_g11 sndr_g11 sndr_g12 sndr_g13 sndr_g08_prep sndr_g11_prep sndr_g12_prep sndr_g13_prep sndrd1_g11 sndrd2_g11 sndrd3_g11 sndrd4_g11 sndrd1_g15 sndrd2_g15 sndrd3_g15 sndrd4_g15 sndrd1_g13 sndrd2_g13 sndrd3_g13 sndrd4_g13 hirs3_n15 hirs3_n16 hirs3_n17 amsua_n15 amsua_n16 amsua_n17 amsua_n18 amsua_n19 amsua_metop-a amsua_metop-b amsua_metop-c amsub_n15 amsub_n16 amsub_n17 hsb_aqua airs_aqua amsua_aqua imgr_g08 imgr_g11 imgr_g12 pcp_ssmi_dmsp pcp_tmi_trmm conv sbuv2_n16 sbuv2_n17 sbuv2_n18 omi_aura ssmi_f13 ssmi_f14 ssmi_f15 hirs4_n18 hirs4_metop-a mhs_n18 mhs_n19 mhs_metop-a mhs_metop-b mhs_metop-c amsre_low_aqua amsre_mid_aqua amsre_hig_aqua ssmis_las_f16 ssmis_uas_f16 ssmis_img_f16 ssmis_env_f16 iasi_metop-a iasi_metop-b iasi_metop-c seviri_m08 seviri_m09 seviri_m10 seviri_m11 cris_npp atms_npp ssmis_f17 cris-fsr_npp cris-fsr_n20 atms_n20 abi_g16"
 
    for type in $listall_cnv; do
       count=$(ls pe*.${type}_${loop}.nc4 | wc -l)
       if [[ $count -gt 0 ]]; then
-         ${APRUN} nc_diag_cat.x -o diag_${type}_${string}.${YYYYMMDDHH}.nc4 pe*.${type}_${loop}.nc4
-         gzip diag_${type}_${string}.${YYYYMMDDHH}.nc4*
-         cp diag_${type}_${string}.${YYYYMMDDHH}.nc4.gz $comout
+         ${APRUN} ${nc_diag_cat} -o diag_${type}_${string}.${YYYYMMDDHH}.nc4 pe*.${type}_${loop}.nc4
+         cp diag_${type}_${string}.${YYYYMMDDHH}.nc4 $comout
          echo "diag_${type}_${string}.${YYYYMMDDHH}.nc4*" >> listcnv
          numfile_cnv=`expr ${numfile_cnv} + 1`
       fi
@@ -1001,9 +1065,8 @@ if [ $netcdf_diag = ".true." ]; then
    for type in $listall_rad; do
       count=$(ls pe*.${type}_${loop}.nc4 | wc -l)
       if [[ $count -gt 0 ]]; then
-         ${APRUN} nc_diag_cat.x -o diag_${type}_${string}.${YYYYMMDDHH}.nc4 pe*.${type}_${loop}.nc4
-         gzip diag_${type}_${string}.${YYYYMMDDHH}.nc4*
-         cp diag_${type}_${string}.${YYYYMMDDHH}.nc4.gz $comout
+         ${APRUN} ${nc_diag_cat} -o diag_${type}_${string}.${YYYYMMDDHH}.nc4 pe*.${type}_${loop}.nc4
+         cp diag_${type}_${string}.${YYYYMMDDHH}.nc4 $comout
          echo "diag_${type}_${string}.${YYYYMMDDHH}.nc4*" >> listrad
          numfile_rad=`expr ${numfile_rad} + 1`
       else

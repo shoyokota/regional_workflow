@@ -483,6 +483,15 @@ optionList[11]=DO_BUFRSND
 optionList[12]=USE_RRFSE_ENS
 optionList[13]=DO_JEDI_ENVAR_IODA
 optionList[14]=DO_SMOKE_DUST
+optionList[15]=DO_POST_PROD
+optionList[16]=DO_POST_SPINUP
+optionList[17]=DO_PARALLEL_PRDGEN
+optionList[18]=DO_ENSEMBLE
+optionList[19]=DO_ENSINIT
+optionList[20]=DO_ENSFCST
+optionList[21]=DO_SAVE_INPUT
+optionList[22]=DO_SDDACYCLE
+optionList[23]=DO_SAVE_DA_OUTPUT
 
 obs_number=${#optionList[@]}
 for (( i=0; i<${obs_number}; i++ ));
@@ -529,7 +538,7 @@ case $MACHINE in
     QUEUE_HPSS=${QUEUE_HPSS:-"dev_transfer"}
     QUEUE_FCST=${QUEUE_FCST:-"dev"}
     QUEUE_ANALYSIS=${QUEUE_ANALYSIS:-"dev"}
-    QUEUE_WGRIB2=${QUEUE_WGRIB2:-"dev"}
+    QUEUE_PRDGEN=${QUEUE_PRDGEN:-"dev"}
     QUEUE_POST=${QUEUE_POST:-"dev"}
     ;;
 
@@ -542,7 +551,7 @@ case $MACHINE in
     QUEUE_HPSS=${QUEUE_HPSS:-"batch"}
     PARTITION_FCST=${PARTITION_FCST:-"hera"}
     QUEUE_FCST=${QUEUE_FCST:-"batch"}
-    QUEUE_WGRIB2=${QUEUE_WGRIB2:-"batch"}
+    QUEUE_PRDGEN=${QUEUE_PRDGEN:-"batch"}
     QUEUE_POST=${QUEUE_POST:-"batch"}
     ;;
 
@@ -570,8 +579,8 @@ case $MACHINE in
     QUEUE_GRAPHICS=${QUEUE_GRAPHICS:-"batch"}
     PARTITION_ANALYSIS=${PARTITION_ANALYSIS:-"vjet,kjet,xjet"}
     QUEUE_ANALYSIS=${QUEUE_ANALYSIS:-"batch"}
-    PARTITION_WGRIB2=${PARTITION_WGRIB2:-"sjet,vjet,kjet,xjet"}
-    QUEUE_WGRIB2=${QUEUE_WGRIB2:-"batch"}
+    PARTITION_PRDGEN=${PARTITION_PRDGEN:-"sjet,vjet,kjet,xjet"}
+    QUEUE_PRDGEN=${QUEUE_PRDGEN:-"batch"}
     PARTITION_POST=${PARTITION_POST:-"sjet,vjet,kjet,xjet"}
     QUEUE_POST=${QUEUE_POST:-"batch"}
     ;;
@@ -836,6 +845,7 @@ if [ "${RUN_ENVIR}" = "nco" ]; then
   FIX_CRTM=${FIX_CRTM:-"${HOMErrfs}/fix/crtm/CRTM_v2.3.0"}
   FIX_UPP_CRTM=${FIX_UPP_CRTM:-"${HOMErrfs}/fix/crtm/CRTM_v2.4.0"}
   FIX_SMOKE_DUST=${FIX_SMOKE_DUST:-"${HOMErrfs}/fix/smoke_dust"}
+  FIX_BUFRSND=${FIX_BUFRSND:-"${HOMErrfs}/fix/bufrsnd"}
   AIRCRAFT_REJECT=${AIRCRAFT_REJECT:-"${FIX_GSI}"}
   SFCOBS_USELIST=${SFCOBS_USELIST:-"${FIX_GSI}"}
 fi
@@ -843,9 +853,9 @@ fi
 case $MACHINE in
 
   "WCOSS2")
-    FIXgsm=${FIXgsm:-"/lfs/h2/emc/da/noscrub/Shun.Liu/FIX_RRFS/fix_am"}
-    TOPO_DIR=${TOPO_DIR:-"/lfs/h2/emc/da/noscrub/Shun.Liu/FIX_RRFS/fix_orog"}
-    SFC_CLIMO_INPUT_DIR=${SFC_CLIMO_INPUT_DIR:-"/lfs/h2/emc/da/noscrub/Shun.Liu/FIX_RRFS/fix_sfc_climo"}
+    FIXgsm=${FIXgsm:-"/lfs/h2/emc/lam/noscrub/emc.lam/FIX_RRFS/fix_am"}
+    TOPO_DIR=${TOPO_DIR:-"/lfs/h2/emc/lam/noscrub/emc.lam/FIX_RRFS/fix_orog"}
+    SFC_CLIMO_INPUT_DIR=${SFC_CLIMO_INPUT_DIR:-"/lfs/h2/emc/lam/noscrub/emc.lam/FIX_RRFS/fix_sfc_climo"}
     FIXLAM_NCO_BASEDIR=${FIXLAM_NCO_BASEDIR:-"/needs/to/be/specified"}
     ;;
 
@@ -1377,23 +1387,24 @@ FIXgsi="${EXPTDIR}/fix_gsi"
 FIXcrtm="${EXPTDIR}/fix_crtm"
 FIXuppcrtm="${EXPTDIR}/fix_upp_crtm"
 FIXsmokedust="${EXPTDIR}/fix_smoke_dust"
+FIXbufrsnd="${EXPTDIR}/fix_bufrsnd"
 SST_ROOT="${SST_ROOT}"
 
 if [ "${RUN_ENVIR}" = "nco" ]; then
 
-  CYCLE_BASEDIR="$STMP/tmpnwprd/$RUN"
+  CYCLE_BASEDIR="$STMP"
   check_for_preexist_dir_file "${CYCLE_BASEDIR}" "${PREEXISTING_DIR_METHOD}"
-  ENSCTRL_CYCLE_BASEDIR="${ENSCTRL_STMP}/tmpnwprd/$RUN"
-  COMROOT="$PTMP/com"
-  ENSCTRL_COMROOT="${ENSCTRL_PTMP}/com"
-  COMOUT_BASEDIR="$COMROOT/$NET/$envir"
-  ENSCTRL_COMOUT_BASEDIR="${ENSCTRL_COMROOT}/$NET/$envir"
-  ENSCTRL_COMOUT_DIR="${ENSCTRL_COMROOT}/$NET/$envir/$RUN.@Y@m@d/@H"
-  NWGES_BASEDIR="$NWGES/$envir/$NET"
-  ENSCTRL_NWGES_BASEDIR="${ENSCTRL_NWGES}/$envir/$NET"
-  RRFSE_NWGES_BASEDIR="${RRFSE_NWGES}/$envir/$NET"
+  ENSCTRL_CYCLE_BASEDIR="${ENSCTRL_STMP}"
+  COMROOT="$PTMP"
+  ENSCTRL_COMROOT="${ENSCTRL_PTMP}"
+  COMOUT_BASEDIR="$COMROOT/${envir}"
+  ENSCTRL_COMOUT_BASEDIR="${ENSCTRL_COMROOT}/${envir}"
+  ENSCTRL_COMOUT_DIR="${ENSCTRL_COMOUT_BASEDIR}/${RUN_ensctrl}.@Y@m@d/@H"
+  NWGES_BASEDIR="$NWGES"
+  ENSCTRL_NWGES_BASEDIR="${ENSCTRL_NWGES}"
+  RRFSE_NWGES_BASEDIR="${RRFSE_NWGES}"
 
-  LOGDIR="${COMROOT}/logs/${NET}/${RUN}.@Y@m@d/@H"
+  LOGDIR="${COMROOT}/logs/${RUN}.@Y@m@d/@H"
 
 else
 
@@ -1607,69 +1618,6 @@ external model files for generating LBCs should be located does not exist:
   EXTRN_MDL_SOURCE_BASEDIR_LBCS = \"${EXTRN_MDL_SOURCE_BASEDIR_LBCS}\""
   fi
 
-fi
-#
-#-----------------------------------------------------------------------
-#
-# Make sure that DO_ENSEMBLE is set to a valid value.  Then set the names
-# of the ensemble members.  These will be used to set the ensemble member
-# directories.  Also, set the full path to the FV3 namelist file corresponding
-# to each ensemble member.
-#
-#-----------------------------------------------------------------------
-#
-check_var_valid_value "DO_ENSEMBLE" "valid_vals_DO_ENSEMBLE"
-#
-# Set DO_ENSEMBLE to either "TRUE" or "FALSE" so we don't have to consider
-# other valid values later on.
-#
-DO_ENSEMBLE=${DO_ENSEMBLE^^}
-if [ "$DO_ENSEMBLE" = "TRUE" ] || \
-   [ "$DO_ENSEMBLE" = "YES" ]; then
-  DO_ENSEMBLE="TRUE"
-elif [ "$DO_ENSEMBLE" = "FALSE" ] || \
-     [ "$DO_ENSEMBLE" = "NO" ]; then
-  DO_ENSEMBLE="FALSE"
-fi
-#
-#-----------------------------------------------------------------------
-#
-# Make sure that DO_ENSINIT is set to a valid value.
-#
-#-----------------------------------------------------------------------
-#
-check_var_valid_value "DO_ENSINIT" "valid_vals_DO_ENSINIT"
-#
-# Set DO_ENSFCST to either "TRUE" or "FALSE" so we don't have to consider
-# other valid values later on.
-#
-DO_ENSINIT=${DO_ENSINIT^^}
-if [ "$DO_ENSINIT" = "TRUE" ] || \
-   [ "$DO_ENSINIT" = "YES" ]; then 
-  DO_ENSINIT="TRUE"
-elif [ "$DO_ENSINIT" = "FALSE" ] || \
-     [ "$DO_ENSINIT" = "NO" ]; then 
-  DO_ENSINIT="FALSE"
-fi
-#
-#-----------------------------------------------------------------------
-#
-# Make sure that DO_ENSFCST is set to a valid value.
-#
-#-----------------------------------------------------------------------
-#
-check_var_valid_value "DO_ENSFCST" "valid_vals_DO_ENSFCST"
-#
-# Set DO_ENSFCST to either "TRUE" or "FALSE" so we don't have to consider
-# other valid values later on.
-#
-DO_ENSFCST=${DO_ENSFCST^^}
-if [ "$DO_ENSFCST" = "TRUE" ] || \
-   [ "$DO_ENSFCST" = "YES" ]; then 
-  DO_ENSFCST="TRUE"
-elif [ "$DO_ENSFCST" = "FALSE" ] || \
-     [ "$DO_ENSFCST" = "NO" ]; then 
-  DO_ENSFCST="FALSE"
 fi
 
 NDIGITS_ENSMEM_NAMES="0"
@@ -2741,6 +2689,7 @@ FV3_NML_ENSMEM_FPS=( $( printf "\"%s\" " "${FV3_NML_ENSMEM_FPS[@]}" ))
 
 # for data assimilation
 OBSPATH="${OBSPATH}"
+OBSPATH_PM="${OBSPATH_PM}"
 OBSPATH_NSSLMOSIAC="${OBSPATH_NSSLMOSIAC}"
 LIGHTNING_ROOT="${LIGHTNING_ROOT}"
 ENKF_FCST="${ENKF_FCST}"
@@ -2749,6 +2698,7 @@ FIX_GSI="${FIX_GSI}"
 FIX_CRTM="${FIX_CRTM}"
 FIX_UPP_CRTM="${FIX_UPP_CRTM}"
 FIX_SMOKE_DUST="${FIX_SMOKE_DUST}"
+FIX_BUFRSND="${FIX_BUFRSND}"
 AIRCRAFT_REJECT="${AIRCRAFT_REJECT}"
 SFCOBS_USELIST="${SFCOBS_USELIST}"
 
