@@ -699,6 +699,8 @@ CORRLENGTH=400                 #horizontal localization scale of "Gaspari-Cohn f
 LNSIGCUTOFF=0.5                #vertical localization scale of "Gaspari-Cohn function=0" for EnKF (lnp)
 CORRLENGTH_radardbz=18         #horizontal localization scale of "Gaspari-Cohn function=0" for radardbz EnKF (km)
 LNSIGCUTOFF_radardbz=0.5       #vertical localization scale of "Gaspari-Cohn function=0" for radardbz EnKF (lnp)
+assign_vdl_nml=.false.
+vdl_scale=0
 
 # &RAPIDREFRESH_CLDSURF
 l_PBL_pseudo_SurfobsT=.false.

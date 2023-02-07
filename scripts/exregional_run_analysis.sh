@@ -681,6 +681,10 @@ if [[ ${gsi_type} == "ANALYSIS" && ${anav_type} == "all" ]]; then
   if_model_dbz=.true.
 fi
 naensloc=`expr ${nsclgrp} \* ${ngvarloc} + ${nsclgrp} - 1`
+if [ ${assign_vdl_nml} = ".true." ]; then
+  nsclgrp=`expr ${nsclgrp} \* ${ngvarloc}`
+  ngvarloc=1
+fi
 CONVINFO=${FIX_GSI}/${CONVINFO_FN}
 HYBENSINFO=${FIX_GSI}/${HYBENSINFO_FN}
 OBERROR=${FIX_GSI}/${OBERROR_FN}
