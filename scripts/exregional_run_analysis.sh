@@ -390,7 +390,7 @@ else
     print_info_msg "$VERBOSE" " Hybrid needs at least ${HYBENSMEM_NMIN} ${memname} ensembles, only ${nummem} available"
     echo " ${YYYYMMDDHH}(${cycle_type}): GSI dose pure 3DVAR" >> ${EXPTDIR}/log.cycles
   fi
-  if [[ ${anav_type} == "all" ]]; then
+  if [[ ${anav_type} == "conv_dbz" ]]; then
     anav_type="conv"
   fi
 fi
@@ -501,7 +501,7 @@ else
   esac
 fi
 
-if [[ ${gsi_type} == "OBSERVER" || ${anav_type} == "conv" || ${anav_type} == "all" ]]; then
+if [[ ${gsi_type} == "OBSERVER" || ${anav_type} == "conv" || ${anav_type} == "conv_dbz" ]]; then
 
   obs_files_source[0]=${obspath_tmp}/${obsfileprefix}.t${HH}${SUBH}z.prepbufr.tm00
   obs_files_target[0]=prepbufr
@@ -514,7 +514,7 @@ if [[ ${gsi_type} == "OBSERVER" || ${anav_type} == "conv" || ${anav_type} == "al
   obs_files_source[${obs_number}]=${obspath_tmp}/${obsfileprefix}.t${HH}${SUBH}z.nexrad.tm00.bufr_d
   obs_files_target[${obs_number}]=l2rwbufr
 
-  if [[ ${DO_ENKF_RADAR_REF} == "TRUE" || ${anav_type} == "all" ]]; then
+  if [[ ${DO_ENKF_RADAR_REF} == "TRUE" || ${anav_type} == "conv_dbz" ]]; then
     obs_number=${#obs_files_source[@]}
     if [ ${cycle_type} == "spinup" ]; then
       obs_files_source[${obs_number}]=${cycle_dir}/process_radarref_spinup/00/Gridded_ref.nc
@@ -675,8 +675,8 @@ if [[ ${gsi_type} == "ANALYSIS" && ${anav_type} == "radardbz" ]]; then
   q_hyb_ens=.true.
   if_model_dbz=.true.
 fi
-if [[ ${gsi_type} == "ANALYSIS" && ${anav_type} == "all" ]]; then
-  ANAVINFO=${FIX_GSI}/${ANAVINFO_ALL_FN}
+if [[ ${gsi_type} == "ANALYSIS" && ${anav_type} == "conv_dbz" ]]; then
+  ANAVINFO=${FIX_GSI}/${ANAVINFO_CONV_DBZ_FN}
   beta1_inv=0.0
   if_model_dbz=.true.
 fi
@@ -990,7 +990,7 @@ cp stdout $comout/stdout_${anav_type}
 #-----------------------------------------------------------------------
 #
 touch gsi_complete.txt
-if [[ ${anav_type} == "radardbz" || ${anav_type} == "all" ]]; then
+if [[ ${anav_type} == "radardbz" || ${anav_type} == "conv_dbz" ]]; then
   touch gsi_complete_radar.txt # for nonvarcldanl
 fi
 #
