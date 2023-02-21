@@ -53,6 +53,10 @@ version="0.1.0"
 # The account under which to submit non-reservation jobs to the queue.
 # Defaults to ACCOUNT if not set.
 #
+# HPSS_ACCOUNT:
+# The account under which to submit non-reservation jobs to the queue.
+# Defaults to SERVICE_ACCOUNT if not set.
+#
 # SCHED:
 # The job scheduler to use (e.g. slurm).  Set this to an empty string in
 # order for the experiment generation script to set it depending on the
@@ -143,6 +147,7 @@ version="0.1.0"
 MACHINE="BIG_COMPUTER"
 ACCOUNT="project_name"
 SERVICE_ACCOUNT=""
+HPSS_ACCOUNT=""
 RESERVATION=""
 RESERVATION_POST=""
 SCHED=""
@@ -1781,6 +1786,7 @@ TPP_MAKE_LBCS="1"
 TPP_RUN_ANAL="1"
 TPP_RUN_ENKF="1"
 TPP_RUN_FCST="1"
+TPP_RUN_POST="1"
 #
 # Walltimes.
 #
@@ -1835,6 +1841,8 @@ MEMO_RUN_PRDGEN="24G"
 MEMO_RUN_JEDIENVAR_IODA="20G"
 MEMO_PREP_CYC="40G"
 MEMO_SAVE_RESTART="40G"
+MEMO_SAVE_INPUT="40G"
+MEMO_PROC_SMOKE="40G"
 MEMO_SAVE_DA_OUTPUT="40G"
 #
 # Maximum number of attempts.
