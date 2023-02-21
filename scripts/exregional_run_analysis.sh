@@ -423,17 +423,6 @@ if [ ${BKTYPE} -eq 1 ]; then  # cold start uses background from INPUT
   fv3lam_bg_type=1
 else                          # cycle uses background from restart
   if [ "${IO_LAYOUT_Y}" == "1" ]; then
-    if [ -r "${bkpath}/bk_${ob_type}_fv_core.res.tile1.nc" ]; then
-      cp_vrfy -f ${bkpath}/bk_${ob_type}_fv_core.res.tile1.nc     ${bkpath}/fv_core.res.tile1.nc
-      cp_vrfy -f ${bkpath}/bk_${ob_type}_fv_tracer.res.tile1.nc   ${bkpath}/fv_tracer.res.tile1.nc
-      cp_vrfy -f ${bkpath}/bk_${ob_type}_sfc_data.nc              ${bkpath}/sfc_data.nc
-      cp_vrfy -f ${bkpath}/bk_${ob_type}_phy_data.nc              ${bkpath}/phy_data.nc
-    else
-      cp_vrfy ${bkpath}/fv_core.res.tile1.nc     ${bkpath}/bk_${ob_type}_fv_core.res.tile1.nc
-      cp_vrfy ${bkpath}/fv_tracer.res.tile1.nc   ${bkpath}/bk_${ob_type}_fv_tracer.res.tile1.nc
-      cp_vrfy ${bkpath}/sfc_data.nc              ${bkpath}/bk_${ob_type}_sfc_data.nc
-      cp_vrfy ${bkpath}/phy_data.nc              ${bkpath}/bk_${ob_type}_phy_data.nc
-    fi
     ln_vrfy  -snf ${bkpath}/fv_core.res.tile1.nc             fv3_dynvars
     ln_vrfy  -snf ${bkpath}/fv_tracer.res.tile1.nc           fv3_tracer
     ln_vrfy  -snf ${bkpath}/sfc_data.nc                      fv3_sfcdata
