@@ -367,6 +367,9 @@ if [ ${regional_ensemble_option:-1} -eq 5 ]  && [ ${BKTYPE} != 1  ]; then
   if [ ${l_both_fv3sar_gfs_ens} = ".true." ]; then
     nummem_gfs=$(more filelist03 | wc -l)
     nummem_gfs=$((nummem_gfs - 3 ))
+  else
+    weight_ens_gfs=1.0
+    weight_ens_fv3sar=1.0
   fi
   nummem_fv3sar=$NUM_ENS_MEMBERS
   nummem=`expr ${nummem_gfs} + ${nummem_fv3sar}`
@@ -377,6 +380,8 @@ if [ ${regional_ensemble_option:-1} -eq 5 ]  && [ ${BKTYPE} != 1  ]; then
   grid_ratio_ens="1"
   ens_fast_read=.true.
 else    
+  weight_ens_gfs=1.0
+  weight_ens_fv3sar=1.0
   nummem_gfs=$(more filelist03 | wc -l)
   nummem_gfs=$((nummem_gfs - 3 ))
   nummem=${nummem_gfs}
@@ -666,15 +671,14 @@ if [[ ${gsi_type} == "ANALYSIS" && ${anav_type} == "radardbz" ]]; then
   ens_v=${ens_v_radardbz}
   nsclgrp=1
   ngvarloc=1
-  i_ensloccov4tim=0
-  i_ensloccov4var=0
-  i_ensloccov4scl=0
+  r_ensloccov4tim=1.0
+  r_ensloccov4var=1.0
+  r_ensloccov4scl=1.0
   q_hyb_ens=.true.
   if_model_dbz=.true.
 fi
 if [[ ${gsi_type} == "ANALYSIS" && ${anav_type} == "conv_dbz" ]]; then
   ANAVINFO=${FIX_GSI}/${ANAVINFO_CONV_DBZ_FN}
-  beta1_inv=0.0
   if_model_dbz=.true.
 fi
 naensloc=`expr ${nsclgrp} \* ${ngvarloc} + ${nsclgrp} - 1`
