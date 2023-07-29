@@ -189,6 +189,11 @@ else
     obsfileprefix=${obs_source}
     obspath_tmp=${OBSPATH}/${obs_source}.${YYYYMMDD}
 
+    if [ "${DO_RETRO}" = "TRUE" ]; then
+       obsfileprefix=${YYYYMMDDHH}.${obs_source}
+       obspath_tmp=${OBSPATH}
+    fi
+
     ;;
   "JET" | "HERA" | "ORION")
 
