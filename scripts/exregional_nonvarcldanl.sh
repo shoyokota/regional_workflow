@@ -189,6 +189,15 @@ cp_vrfy ${fixgriddir}/fv3_grid_spec                          fv3_grid_spec
 
 if [ -r "${bkpath}/coupler.res" ]; then # Use background from warm restart
   if [ "${IO_LAYOUT_Y_IN}" == "1" ]; then
+    if [ -r "${bkpath}/bk_cldanl_fv_core.res.tile1.nc" ]; then
+      cp_vrfy -f ${bkpath}/bk_cldanl_fv_core.res.tile1.nc     ${bkpath}/fv_core.res.tile1.nc
+      cp_vrfy -f ${bkpath}/bk_cldanl_fv_tracer.res.tile1.nc   ${bkpath}/fv_tracer.res.tile1.nc
+      cp_vrfy -f ${bkpath}/bk_cldanl_sfc_data.nc              ${bkpath}/sfc_data.nc
+    else
+      cp_vrfy ${bkpath}/fv_core.res.tile1.nc     ${bkpath}/bk_cldanl_fv_core.res.tile1.nc
+      cp_vrfy ${bkpath}/fv_tracer.res.tile1.nc   ${bkpath}/bk_cldanl_fv_tracer.res.tile1.nc
+      cp_vrfy ${bkpath}/sfc_data.nc              ${bkpath}/bk_cldanl_sfc_data.nc
+    fi
     ln_vrfy -s ${bkpath}/fv_core.res.tile1.nc         fv3_dynvars
     ln_vrfy -s ${bkpath}/fv_tracer.res.tile1.nc       fv3_tracer
     ln_vrfy -s ${bkpath}/sfc_data.nc                  fv3_sfcdata
@@ -282,7 +291,7 @@ fi
 if [ ${DO_ENKF_RADAR_REF} == "TRUE" ]; then
   l_qnr_from_qr=".true."
 fi
-if [ -r "${cycle_dir}/anal_radardbz_gsi${cycle_tag}/stdout" ] || [ -r "${cycle_dir}/anal_all_gsi/stdout" ]; then
+if [ -r "${cycle_dir}/anal_radardbz_gsi${cycle_tag}/gsi_complete_radar.txt" ] || [ -r "${cycle_dir}/anal_all_gsi/gsi_complete_radar.txt" ]; then
   l_precip_clear_only=".true."
   l_qnr_from_qr=".true."
 fi

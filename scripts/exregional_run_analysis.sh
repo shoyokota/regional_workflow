@@ -914,6 +914,9 @@ Call to executable to run GSI returned with nonzero exit code."
 #-----------------------------------------------------------------------
 #
 touch gsi_complete.txt
+if [[ ${ob_type} == "radardbz" || ${ob_type} == "all" ]]; then
+  touch gsi_complete_radar.txt # for nonvarcldanl
+fi
 #
 #-----------------------------------------------------------------------
 #
