@@ -55,7 +55,7 @@ FV3_HRRR:
     hord_dp: 6
     hord_mt: 6
     hord_tm: 6
-    hord_tr: 10
+    hord_tr: 8
     hord_vt: 6
     k_split: 2
     kord_mt: 9
@@ -138,7 +138,7 @@ FV3_HRRR_gf:
     hord_dp: 6
     hord_mt: 6
     hord_tm: 6
-    hord_tr: 10
+    hord_tr: 8
     hord_vt: 6
     k_split: 2
     kord_mt: 9
