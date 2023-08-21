@@ -235,6 +235,7 @@ Creating links in the FIXLAM directory to the grid files..."
     "C*${DOT_OR_USCORE}grid.tile${TILE_RGNL}.halo${NHW}.nc" \
     "C*${DOT_OR_USCORE}grid.tile${TILE_RGNL}.halo${NH3}.nc" \
     "C*${DOT_OR_USCORE}grid.tile${TILE_RGNL}.halo${NH4}.nc" \
+    "C*${DOT_OR_USCORE}fvcom_mask.nc" \
         )
     fps=( "${fns[@]/#/${GRID_DIR}/}" )
     run_task="${RUN_TASK_MAKE_GRID}"
