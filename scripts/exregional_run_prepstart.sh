@@ -555,8 +555,8 @@ fi
 if [ "${DO_SMOKE_DUST}" = "TRUE" ] && [ ${cycle_type} == "spinup" ] ; then  # cycle smoke/dust fields
   if [ ${HH} -eq 4 ] || [ ${HH} -eq 16 ] ; then
 
-# figure out which tracer is available
-      restart_file_dir_name=fcst_fv3lam
+# figure out which surface is available
+      surface_file_dir_name=fcst_fv3lam
       bkpath_find="missing"
       restart_prefix_find="missing"
       if [ "${bkpath_find}" == "missing" ]; then
@@ -564,10 +564,10 @@ if [ "${DO_SMOKE_DUST}" = "TRUE" ] && [ ${cycle_type} == "spinup" ] ; then  # cy
 
           offset_hours=${DA_CYCLE_INTERV}
           YYYYMMDDHHmInterv=$( date +%Y%m%d%H -d "${START_DATE} ${offset_hours} hours ago" )
-          bkpath=${fg_root}/${YYYYMMDDHHmInterv}${SLASH_ENSMEM_SUBDIR}/${restart_file_dir_name}/RESTART
+          bkpath=${fg_root}/${YYYYMMDDHHmInterv}${SLASH_ENSMEM_SUBDIR}/${surface_file_dir_name}/RESTART
 
           n=${DA_CYCLE_INTERV}
-          while [[ $n -le 24 ]] ; do
+          while [[ $n -le 6 ]] ; do
              if [ "${IO_LAYOUT_Y}" == "1" ]; then
                checkfile=${bkpath}/${restart_prefix}fv_tracer.res.tile1.nc
              else
@@ -583,7 +583,7 @@ if [ "${DO_SMOKE_DUST}" = "TRUE" ] && [ ${cycle_type} == "spinup" ] ; then  # cy
              n=$((n + ${DA_CYCLE_INTERV}))
              offset_hours=${n}
              YYYYMMDDHHmInterv=$( date +%Y%m%d%H -d "${START_DATE} ${offset_hours} hours ago" )
-             bkpath=${fg_root}/${YYYYMMDDHHmInterv}${SLASH_ENSMEM_SUBDIR}/${restart_file_dir_name}/RESTART  # cycling, use background from RESTART
+             bkpath=${fg_root}/${YYYYMMDDHHmInterv}${SLASH_ENSMEM_SUBDIR}/${surface_file_dir_name}/RESTART  # cycling, use background from RESTART
              print_info_msg "$VERBOSE" "Trying this path: ${bkpath}"
           done
       fi
@@ -882,6 +882,10 @@ fi
 # 
 if [ ${SFC_CYC} -eq 3 ] ; then
 
+   do_lake_surgery=".false."
+   if [ "${USE_CLM}" = "TRUE" ]; then
+     do_lake_surgery=".true."
+   fi
 #   raphrrr_com=/mnt/lfs4/BMC/rtwbl/mhu/wcoss/nco/com/
 #   ln -s ${raphrrr_com}/rap/prod/rap.${YYYYMMDD}/rap.t${HH}z.wrf_inout_smoke    sfc_rap
 #   ln -s ${raphrrr_com}/hrrr/prod/hrrr.${YYYYMMDD}/conus/hrrr.t${HH}z.wrf_inout sfc_hrrr
@@ -912,15 +916,6 @@ if [ ${SFC_CYC} -eq 3 ] ; then
      hrrr_akfile='sfc_hrrrak'
    fi
  
-cat << EOF > use_raphrrr_sfc.namelist
-&setup
-rapfile=${rapfile}
-hrrrfile=${hrrrfile}
-hrrr_akfile=${hrrr_akfile}
-rrfsfile='sfc_data.nc'
-/
-EOF
-
    exect="use_raphrrr_sfc.exe"
    if [ -f ${EXECDIR}/$exect ]; then
      print_info_msg "$VERBOSE" "
@@ -929,20 +924,77 @@ EOF
 
      if [ "${IO_LAYOUT_Y}" == "1" ]; then
        ln_vrfy -sf ${FIX_GSI}/${PREDEF_GRID_NAME}/fv3_grid_spec  fv3_grid_spec
-       ./${exect} > stdout_sfc_sugery 2>&1 || print_info_msg "\
-       Call to executable to run surface surgery returned with nonzero exit code."
      else
        for ii in ${list_iolayout}
        do
          iii=$(printf %4.4i $ii)
          ln_vrfy -sf ${gridspec_dir}/fv3_grid_spec.${iii}  fv3_grid_spec
+       done
+     fi
+
+for file in ${rapfile} ${hrrrfile} ${hrrr_akfile}
+do
+
+  if [ "${file}" == "missing" ]; then
+     continue
+  else
+    if [ "${file}" == "${rapfile}" ]; then
+
+cat << EOF > use_raphrrr_sfc.namelist
+&setup
+rapfile=${rapfile}
+hrrrfile='missing'
+hrrr_akfile='missing'
+rrfsfile='sfc_data.nc'
+do_lake_surgery=${do_lake_surgery}
+/
+EOF
+cp use_raphrrr_sfc.namelist use_raphrrr_sfc.namelist_rap
+     elif [ "${file}" == "${hrrrfile}" ]; then
+
+cat << EOF > use_raphrrr_sfc.namelist
+&setup
+rapfile='missing'
+hrrrfile=${hrrrfile}
+hrrr_akfile='missing'
+rrfsfile='sfc_data.nc'
+do_lake_surgery=${do_lake_surgery}
+/
+EOF
+cp use_raphrrr_sfc.namelist use_raphrrr_sfc.namelist_hrrr
+
+     elif [ "${file}" == "${hrrr_akfile}" ]; then
+
+cat << EOF > use_raphrrr_sfc.namelist
+&setup
+rapfile='missing'
+hrrrfile='missing'
+hrrr_akfile=${hrrr_akfile}
+rrfsfile='sfc_data.nc'
+do_lake_surgery=${do_lake_surgery}
+/
+EOF
+cp use_raphrrr_sfc.namelist use_raphrrr_sfc.namelist_hrrrak
+    fi
+
+fi
+     if [ "${IO_LAYOUT_Y}" == "1" ]; then
+       cp_vrfy sfc_data.nc sfc_data.nc_read
+       ./${exect} > stdout_sfc_sugery.${file} 2>&1 || print_info_msg "\
+       Call to executable to run surface surgery returned with nonzero exit code."
+     else
+       for ii in ${list_iolayout}
+       do
+         iii=$(printf %4.4i $ii)
          ln_vrfy -sf sfc_data.nc.${iii} sfc_data.nc
-         ./${exect} > stdout_sfc_sugery.${iii} 2>&1 || print_info_msg "\
+         cp_vrfy sfc_data.nc sfc_data.nc_read
+         ./${exect} > stdout_sfc_sugery.${iii}.${file} 2>&1 || print_info_msg "\
          Call to executable to run surface surgery returned with nonzero exit code."
          ls -l > list_sfc_sugery.${iii}
        done
        rm -f sfc_data.nc
      fi
+done
 
      if [ ${SAVE_CYCLE_LOG} == "TRUE" ] ; then
        echo "${YYYYMMDDHH}(${cycle_type}): run surface surgery" >> ${EXPTDIR}/log.cycles

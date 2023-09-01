@@ -2129,6 +2129,9 @@ DO_ENS_RADDA="FALSE"
 #
 # DO_SMOKE_DUST
 #     Flag turn on smoke and dust for RRFS-SD
+#
+# USE_CLM:
+# Use CLM mode in the model
 #-----------------------------------------------------------------------
 DO_DACYCLE="FALSE"
 DO_SDDACYCLE="FALSE"
@@ -2140,6 +2143,7 @@ DO_RADDA="FALSE"
 DO_BUFRSND="FALSE"
 USE_RRFSE_ENS="FALSE"
 DO_SMOKE_DUST="FALSE"
+USE_CLM="FALSE"
 #
 #-----------------------------------------------------------------------
 #
