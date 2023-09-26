@@ -59,7 +59,7 @@ specified cycle.
 #
 #-----------------------------------------------------------------------
 #
-valid_args=( "cycle_dir" "cycle_type" "enkfworkdir" "NWGES_DIR" "ob_type" )
+valid_args=( "cycle_dir" "cycle_type" "enkfworkdir" "NWGES_DIR" "comout" "ob_type" )
 process_args valid_args "$@"
 
 cycle_type=${cycle_type:-prod}
@@ -77,10 +77,6 @@ case $MACHINE in
   export OMP_PROC_BIND=close
   export OMP_PLACES=threads
   export MPICH_RANK_REORDER_METHOD=0
-  if [ ${PREDEF_GRID_NAME} = "RRFS_CONUS_3km" ]; then
-    export OMP_STACKSIZE=1G
-    export OMP_NUM_THREADS=1
-  fi
   ncores=$(( NNODES_RUN_ENKF*PPN_RUN_ENKF ))
   APRUN="mpiexec -n ${ncores} -ppn ${PPN_RUN_ENKF} --label --line-buffer --cpu-bind core --depth ${OMP_NUM_THREADS}"
   ;;
@@ -496,23 +492,18 @@ fi
 countdiag=$(ls diag*conv* | wc -l)
 if [ $countdiag -gt $nens ]; then
 
-    if [ ${ob_type} == "conv" ]; then
 ${APRUN}  $enkfworkdir/enkf.x < enkf.nml 1>${stdout_name} 2>${stderr_name} || print_err_msg_exit "\
 Call to executable to run EnKF returned with nonzero exit code."
 
-
 cp_vrfy ${stdout_name} ${enkfanal_nwges_dir}/.
 cp_vrfy ${stderr_name} ${enkfanal_nwges_dir}/.
+cp_vrfy ${stdout_name} ${comout}/enkf.${stdout_name}
+cp_vrfy ${stderr_name} ${comout}/enkf.${stderr_name}
 if [ ! -d ${NWGES_DIR}/../enkf_diag ]; then
   mkdir -p ${NWGES_DIR}/../enkf_diag
 fi
 cp_vrfy ${stdout_name} ${NWGES_DIR}/../enkf_diag/${stdout_name}.$vlddate
 cp_vrfy ${stderr_name} ${NWGES_DIR}/../enkf_diag/${stderr_name}.$vlddate
-    else
-${APRUN}  $enkfworkdir/enkf.x < enkf.nml 1>${stdout_name} 2>${stderr_name} || print_err_msg_exit "\
-Call to executable to run EnKF returned with nonzero exit code."
-       echo "Warning: EnKF dbz analysis due to lack of ${ob_type} obs for cycle $vlddate !!!"
-    fi
 
 else
   echo "Warning: EnKF not running due to lack of ${ob_type} obs for cycle $vlddate !!!"
