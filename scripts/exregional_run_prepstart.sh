@@ -523,14 +523,14 @@ cat << EOF > sst.namelist
 EOF
      if [ "${IO_LAYOUT_Y}" == "1" ]; then
        ln_vrfy -sf ${FIX_GSI}/${PREDEF_GRID_NAME}/fv3_grid_spec  fv3_grid_spec
-       ${EXECDIR}/process_updatesst.exe > stdout_sstupdate 2>&1
+       ${APRUN} ${EXECDIR}/process_updatesst.exe > stdout_sstupdate 2>&1
      else
        for ii in ${list_iolayout}
        do
          iii=$(printf %4.4i $ii)
          ln_vrfy -sf ${gridspec_dir}/fv3_grid_spec.${iii}  fv3_grid_spec
          ln_vrfy -sf sfc_data.nc.${iii} sfc_data.nc
-         ${EXECDIR}/process_updatesst.exe > stdout_sstupdate.${iii} 2>&1
+         ${APRUN} ${EXECDIR}/process_updatesst.exe > stdout_sstupdate.${iii} 2>&1
          ls -l > list_sstupdate.${iii}
        done
        rm -f sfc_data.nc
@@ -661,15 +661,50 @@ if [ ${SFC_CYC} -eq 1 ] || [ ${SFC_CYC} -eq 2 ] ; then  # cycle surface fields
         fi
       done
     fi
+    surface_file_path=$bkpath
+
+# check if there are surface file in continue cycle data space:
+    if [ "${restart_suffix_find}" == "missing" ] || [ "${restart_prefix_find}" == "missing" ]; then
+      surface_file_path=${CONT_CYCLE_DATA_ROOT}/surface
+      for ndayinhour in 00 24
+      do 
+        if [ "${restart_suffix_find}" == "missing" ]; then
+          restart_prefix=$( date +%Y%m%d.%H0000. -d "${START_DATE} ${ndayinhour} hours ago" )
+
+          offset_hours=$(( ${DA_CYCLE_INTERV} + ${ndayinhour} ))
+          YYYYMMDDHHmInterv=$( date +%Y%m%d%H -d "${START_DATE} ${offset_hours} hours ago" )
+
+          n=${DA_CYCLE_INTERV}
+          while [[ $n -le 2 ]] ; do
+             if [ "${IO_LAYOUT_Y}" == "1" ]; then
+               checkfile=${surface_file_path}/${restart_prefix}sfc_data.nc.${YYYYMMDDHHmInterv}
+             else
+               checkfile=${surface_file_path}/${restart_prefix}sfc_data.nc.${YYYYMMDDHHmInterv}.0000
+             fi
+             if [ -r "${checkfile}" ] && [ "${restart_suffix_find}" == "missing" ]; then
+               restart_prefix_find=${restart_prefix}
+               restart_suffix_find=${YYYYMMDDHHmInterv}
+               print_info_msg "$VERBOSE" "Found ${checkfile}; Use it as surface for analysis "
+             fi
+ 
+             n=$((n + ${DA_CYCLE_INTERV}))
+             offset_hours=$(( ${n} + ${ndayinhour} ))
+             YYYYMMDDHHmInterv=$( date +%Y%m%d%H -d "${START_DATE} ${offset_hours} hours ago" )
+             print_info_msg "$VERBOSE" "Trying this cycle: ${YYYYMMDDHHmInterv}"
+          done
+        fi
+      done
+    fi
+
 # rename the soil mositure and temperature fields in restart file
       rm -f cycle_surface.done
       if [ "${restart_suffix_find}" == "missing" ] || [ "${restart_prefix_find}" == "missing" ]; then
         print_info_msg "Warning: cannot find surface from previous cycle"
       else
         if [ "${IO_LAYOUT_Y}" == "1" ]; then
-          checkfile=${bkpath}/${restart_prefix_find}sfc_data.nc.${restart_suffix_find}
+          checkfile=${surface_file_path}/${restart_prefix_find}sfc_data.nc.${restart_suffix_find}
         else
-          checkfile=${bkpath}/${restart_prefix_find}sfc_data.nc.${restart_suffix_find}.0000
+          checkfile=${surface_file_path}/${restart_prefix_find}sfc_data.nc.${restart_suffix_find}.0000
         fi
         if [ -r "${checkfile}" ]; then
           if [ ${SFC_CYC} -eq 1 ]; then   # cycle surface at cold start cycle
@@ -690,10 +725,10 @@ if [ ${SFC_CYC} -eq 1 ] || [ ${SFC_CYC} -eq 2 ] ; then  # cycle surface fields
               mv ${restart_prefix_find}sfc_data.nc sfc_data.nc
               ncatted -a checksum,,d,, sfc_data.nc
               if [ "${if_update_ice}" == "TRUE" ]; then
-                ${EXECDIR}/update_ice.exe > stdout_cycleICE 2>&1
+                ${APRUN} ${EXECDIR}/update_ice.exe > stdout_cycleICE 2>&1
               fi
             else
-              checkfile=${bkpath}/${restart_prefix_find}sfc_data.nc.${restart_suffix_find}
+              checkfile=${surface_file_path}/${restart_prefix_find}sfc_data.nc.${restart_suffix_find}
               for ii in ${list_iolayout}
               do
                 iii=$(printf %4.4i $ii)
@@ -709,7 +744,7 @@ if [ ${SFC_CYC} -eq 1 ] || [ ${SFC_CYC} -eq 2 ] ; then  # cycle surface fields
                 ln_vrfy -sf sfc_data.nc.${iii} sfc_data.nc
                 ln_vrfy -sf gfsice.sfc_data.nc.${iii} gfsice.sfc_data.nc
                 if [ "${if_update_ice}" == "TRUE" ]; then
-                  ${EXECDIR}/update_ice.exe > stdout_cycleICE.${iii} 2>&1
+                  ${APRUN} ${EXECDIR}/update_ice.exe > stdout_cycleICE.${iii} 2>&1
                 fi
               done
               rm -f sfc_data.nc gfsice.sfc_data.nc
@@ -748,14 +783,14 @@ if [ ${HH} -eq ${GVF_update_hour} ] && [ ${cycle_type} == "spinup" ]; then
 
       if [ "${IO_LAYOUT_Y}" == "1" ]; then
         ln_vrfy -sf ${FIX_GSI}/${PREDEF_GRID_NAME}/fv3_grid_spec  fv3_grid_spec
-        ${EXECDIR}/update_GVF.exe > stdout_updateGVF 2>&1
+        ${APRUN} ${EXECDIR}/update_GVF.exe > stdout_updateGVF 2>&1
       else
         for ii in ${list_iolayout}
         do
           iii=$(printf %4.4i $ii)
           ln_vrfy -sf ${gridspec_dir}/fv3_grid_spec.${iii}  fv3_grid_spec
           ln_vrfy -sf sfc_data.nc.${iii} sfc_data.nc
-          ${EXECDIR}/update_GVF.exe > stdout_updateGVF.${iii} 2>&1
+          ${APRUN} ${EXECDIR}/update_GVF.exe > stdout_updateGVF.${iii} 2>&1
           ls -l > list_updateGVF.${iii}
         done
         rm -f sfc_data.nc
@@ -900,12 +935,18 @@ if [ ${SFC_CYC} -eq 3 ] ; then
    elif [ -r ${raphrrr_com}/rap/prod/rap.${YYYYMMDD}/rap.t${HH}z.wrf_inout_smoke ]; then
      ln -s ${raphrrr_com}/rap/prod/rap.${YYYYMMDD}/rap.t${HH}z.wrf_inout_smoke  sfc_rap
      rapfile='sfc_rap'
+   elif [ -r ${raphrrr_com}/rap/v5.1/rap.${YYYYMMDD}/rap.t${HH}z.wrf_inout_smoke ]; then
+     ln -s ${raphrrr_com}/rap/v5.1/rap.${YYYYMMDD}/rap.t${HH}z.wrf_inout_smoke  sfc_rap
+     rapfile='sfc_rap'
    fi
    if [ -r ${raphrrr_com}/${YYYYMMDD}/hrrr.t${HH}z.wrf_inout ]; then
      ln -s ${raphrrr_com}/${YYYYMMDD}/hrrr.t${HH}z.wrf_inout sfc_hrrr
      hrrrfile='sfc_hrrr'
    elif [ -r ${raphrrr_com}/hrrr/prod/hrrr.${YYYYMMDD}/conus/hrrr.t${HH}z.wrf_inout ]; then
      ln -s ${raphrrr_com}/hrrr/prod/hrrr.${YYYYMMDD}/conus/hrrr.t${HH}z.wrf_inout sfc_hrrr
+     hrrrfile='sfc_hrrr'
+   elif [ -r ${raphrrr_com}/hrrr/v4.1/hrrr.${YYYYMMDD}/conus/hrrr.t${HH}z.wrfhistory00 ]; then
+     ln -s ${raphrrr_com}/hrrr/v4.1/hrrr.${YYYYMMDD}/conus/hrrr.t${HH}z.wrfhistory00 sfc_hrrr
      hrrrfile='sfc_hrrr'
    fi
    if [ -r ${raphrrr_com}/${YYYYMMDD}/hrrrak.t${HH}z.wrf_inout ]; then
@@ -980,7 +1021,7 @@ cp use_raphrrr_sfc.namelist use_raphrrr_sfc.namelist_hrrrak
 fi
      if [ "${IO_LAYOUT_Y}" == "1" ]; then
        cp_vrfy sfc_data.nc sfc_data.nc_read
-       ./${exect} > stdout_sfc_sugery.${file} 2>&1 || print_info_msg "\
+       ${APRUN} ./${exect} > stdout_sfc_sugery.${file} 2>&1 || print_info_msg "\
        Call to executable to run surface surgery returned with nonzero exit code."
      else
        for ii in ${list_iolayout}
@@ -988,7 +1029,7 @@ fi
          iii=$(printf %4.4i $ii)
          ln_vrfy -sf sfc_data.nc.${iii} sfc_data.nc
          cp_vrfy sfc_data.nc sfc_data.nc_read
-         ./${exect} > stdout_sfc_sugery.${iii}.${file} 2>&1 || print_info_msg "\
+         ${APRUN} ./${exect} > stdout_sfc_sugery.${iii}.${file} 2>&1 || print_info_msg "\
          Call to executable to run surface surgery returned with nonzero exit code."
          ls -l > list_sfc_sugery.${iii}
        done

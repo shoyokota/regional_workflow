@@ -133,6 +133,10 @@ run directory (run_dir):
     fi
   fi
 
+  WRTCMP_ideflate="0"
+  if [ ${WRTCMP_output_file} == "netcdf_parallel" ]; then
+    WRTCMP_ideflate="1"
+  fi
 #
 #-----------------------------------------------------------------------
 #
@@ -172,6 +176,8 @@ run directory (run_dir):
     settings="${settings}
   'write_groups': ${WRTCMP_write_groups}
   'write_tasks_per_group': ${WRTCMP_write_tasks_per_group}
+  'output_file': ${WRTCMP_output_file}
+  'ideflate': ${WRTCMP_ideflate}
   'cen_lon': ${WRTCMP_cen_lon}
   'cen_lat': ${WRTCMP_cen_lat}
   'lon1': ${WRTCMP_lon_lwr_left}

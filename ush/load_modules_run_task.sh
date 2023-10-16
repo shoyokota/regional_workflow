@@ -152,11 +152,16 @@ machine=${MACHINE,,}
 env_fn="build_${machine}_${COMPILER}.env"
 env_fp="${SR_WX_APP_TOP_DIR}/env/${env_fn}"
 module use "${SR_WX_APP_TOP_DIR}/env"
+if [ "${task_name}" = "run_prepstart" ] && [  "${machine}" = "wcoss2" ]; then
+source "${SR_WX_APP_TOP_DIR}/env/${env_fn}.prepcyc" || print_err_msg_exit "\
+Sourcing platform- and compiler-specific environment file (env_fp) is wrong"
+else
 source "${env_fp}" || print_err_msg_exit "\
 Sourcing platform- and compiler-specific environment file (env_fp) for the 
 workflow task specified by task_name failed:
   task_name = \"${task_name}\"
   env_fp = \"${env_fp}\""
+fi
 
 #
 #-----------------------------------------------------------------------

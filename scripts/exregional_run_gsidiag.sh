@@ -314,8 +314,12 @@ if [ ${DO_RADDA} == "TRUE" ]; then
      fi
 
   # For EnVar DA  
-     cp_vrfy ./satbias_out ${satbias_dir}/rrfs.${spinup_or_prod_rrfs}.${YYYYMMDDHH}_satbias
-     cp_vrfy ./satbias_pc.out ${satbias_dir}/rrfs.${spinup_or_prod_rrfs}.${YYYYMMDDHH}_satbias_pc
+     if [ -r ./satbias_out ]; then
+       cp_vrfy ./satbias_out ${satbias_dir}/rrfs.${spinup_or_prod_rrfs}.${YYYYMMDDHH}_satbias
+     fi
+     if [ -r ./satbias_pc.out ]; then
+       cp_vrfy ./satbias_pc.out ${satbias_dir}/rrfs.${spinup_or_prod_rrfs}.${YYYYMMDDHH}_satbias_pc
+     fi
   fi
 
 fi

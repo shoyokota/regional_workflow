@@ -315,6 +315,10 @@ EXPT_SUBDIR=""
 #   RAPHRR_SOIL_ROOT: locations of RAP/HRRR forecast netcdf files
 #   SOIL_SURGERY_time: cycle time for soil surgery 
 #
+# Setup default data locations for cycle surface/bias correction coefficient
+#   smoke/dust during machine switch and version update
+#   CONT_CYCLE_DATA_ROOT: locations of surface, bias correction coefficient files
+#
 # Setup default locations for FIRE_RRFS files and update time
 #  FIRE_RAVE_DIR
 #  FIRE_RRFS_ROOT
@@ -360,6 +364,7 @@ SOIL_SURGERY_time=9999999999
 FIRE_RAVE_DIR="/lfs4/BMC/public/data/grids/nesdis/3km_fire_emissions"
 FIRE_RRFS_ROOT="/mnt/lfs4/BMC/gsd-fv3-dev/FIRE_RRFS_ROOT"
 FIRE_RRFS_update_hour=99
+CONT_CYCLE_DATA_ROOT="/lfs/h2/emc/lam/noscrub/emc.lam/nwges"
 
 #
 #-----------------------------------------------------------------------
@@ -1294,6 +1299,9 @@ OUTPUT_FH="-1"
 # WRTCMP_write_tasks_per_group:
 # The number of MPI tasks to allocate for each write group.
 #
+# WRTCMP_output_file:
+# The output file format.
+#
 # PRINT_ESMF:
 # Flag for whether or not to output extra (debugging) information from
 # ESMF routines.  Must be "TRUE" or "FALSE".  Note that the write
@@ -1309,6 +1317,7 @@ PRINT_ESMF="FALSE"
 
 WRTCMP_write_groups="1"
 WRTCMP_write_tasks_per_group="20"
+WRTCMP_output_file="netcdf"
 
 WRTCMP_output_grid="''"
 WRTCMP_cen_lon=""
