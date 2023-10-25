@@ -726,6 +726,7 @@ i_use_2mT4B=0
 i_T_Q_adjust=1
 l_rtma3d=.false.
 i_precip_vertical_check=0
+l_cld_uncertainty=.false.
 #  &CHEM 
 laeroana_fv3smoke=.false.
 berror_fv3_cmaq_regional=.false.
