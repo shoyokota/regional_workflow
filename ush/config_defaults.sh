@@ -598,6 +598,8 @@ DA_CYCLE_INTERV="1"
 RESTART_INTERVAL="1 2"
 RESTART_INTERVAL_LONG="1 2"
 CYCL_HRS_HYB_FV3LAM_ENS=( "99" )
+FIRST_BLENDED_CYCLE="18"
+FIRST_BLENDED_CYCLE_DATE="YYYYMMDDHH"
 
 #-----------------------------------------------------------------------
 #
@@ -2101,6 +2103,28 @@ TILE_SETS="full"
 # 'DO_ENS_RADDA="TRUE"', the radiance DA must be true, i.e., 'DO_RADDA="TRUE"'.  This 
 # is because the radiance DA in EnKF relies the radiance procedures in the GSI-observer, 
 # which is mainly controled by DO_RADDA.
+#
+# DO_ENS_BLENDING:
+# Flag that can enable two things:
+#	1) large-scale blending during initialization.
+#	2) activate cold2warm start only (replaces ensinit step).
+# When this is activated there are two other flags that are relevant:
+#	1) BLEND
+#	2) USE_HOST_ENKF
+#
+# BLEND: Only relevant when DO_ENS_BLENDING=TRUE. Flag to perform large scale
+# blending during initialization. If this is set to "TRUE", then the RRFS
+# EnKF will be blended with the external model ICS using the Raymond filter
+# (a low-pass, sixth-order implicit tangent filter).
+# TRUE:  Blend RRFS and GDAS EnKF
+# FALSE: Don't blend, activate cold2warm start only, and use either GDAS or
+#        RRFS; default
+#
+# USE_HOST_ENKF: Only relevant when DO_ENS_BLENDING=TRUE and BLEND=FALSE.
+# Flag for which EnKF to use during cold2warm start conversion.
+# TRUE:  Final EnKF will be GDAS (no blending); default
+# FALSE: Final EnKF will be RRFS (no blending)
+#
 #-----------------------------------------------------------------------
 #
 DO_ENSEMBLE="FALSE"
@@ -2120,6 +2144,10 @@ DO_ENSINIT="FALSE"
 DO_SAVE_DA_OUTPUT="FALSE"
 DO_GSIDIAG_OFFLINE="FALSE"
 DO_ENS_RADDA="FALSE"
+DO_ENS_BLENDING="FALSE"
+ENS_BLENDING_LENGTHSCALE="960" # (Lx) in kilometers
+BLEND="FALSE"
+USE_HOST_ENKF="TRUE"
 #
 #-----------------------------------------------------------------------
 #

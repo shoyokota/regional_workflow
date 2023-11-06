@@ -808,6 +808,9 @@ NUM_CYCLES="${#ALL_CDATES[@]}"
 # EXECDIR:
 # Directory containing various executable files.
 #
+# LIB64DIR:
+# Directory containing various library files.
+#
 # TEMPLATE_DIR:
 # Directory in which templates of various FV3-LAM input files are locat-
 # ed.
@@ -837,6 +840,7 @@ SRC_DIR="${SR_WX_APP_TOP_DIR}/src"
 PARMDIR="$HOMErrfs/parm"
 MODULES_DIR="$HOMErrfs/modulefiles"
 EXECDIR="${SR_WX_APP_TOP_DIR}/bin"
+LIB64DIR="${SR_WX_APP_TOP_DIR}/lib64"
 TEMPLATE_DIR="$USHDIR/templates"
 if [ "${RUN_ENVIR}" = "nco" ]; then
   FIXgsm=${FIXgsm:-"$HOMErrfs/fix/am"}
@@ -2661,6 +2665,7 @@ SRC_DIR="$SRC_DIR"
 PARMDIR="$PARMDIR"
 MODULES_DIR="${MODULES_DIR}"
 EXECDIR="$EXECDIR"
+LIB64DIR="$LIB64DIR"
 FIXam="$FIXam"
 FIXLAM="$FIXLAM"
 FIXgsm="$FIXgsm"

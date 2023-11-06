@@ -142,6 +142,7 @@ YYYYMMDD=${YYYYMMDDHH:0:8}
 YYYYJJJHH=${YYYY}${JJJ}${HH}
 
 current_time=$(date "+%T")
+cdate_crnt_fhr=$( date --utc --date "${YYYYMMDD} ${HH} UTC" "+%Y%m%d%H" )
 
 YYYYMMDDm1=$(date +%Y%m%d -d "${START_DATE} 1 days ago")
 YYYYMMDDm2=$(date +%Y%m%d -d "${START_DATE} 2 days ago")
@@ -210,6 +211,10 @@ if [ ${cycle_type} == "spinup" ]; then
   for cyc_start in "${CYCL_HRS_SPINSTART[@]}"; do
     if [ ${HH} -eq ${cyc_start} ]; then
       BKTYPE=1
+      if [[ ${DO_ENS_BLENDING} == "TRUE" && $cdate_crnt_fhr -ge ${FIRST_BLENDED_CYCLE_DATE} ]]; then
+        echo "do blending"
+        BKTYPE=3   # warm start from blended ics
+      fi
     fi
   done
   if [ ${cycle_subtype} == "spinup" ]; then
@@ -281,6 +286,45 @@ if [ ${BKTYPE} -eq 1 ] ; then  # cold start, use prepare cold strat initial file
       print_err_msg_exit "Error: cannot find cold start initial condition from : ${bkpath}"
     fi
 
+elif [[ $BKTYPE == 3 ]]; then
+    bkpath=${lbcs_root}/$YYYYMMDD$HH${SLASH_ENSMEM_SUBDIR}/ics
+    if [ -r "${bkpath}/coupler.res" ]; then
+      cp_vrfy ${bkpath}/fv_core.res.nc fv_core.res.nc
+      cp_vrfy ${bkpath}/fv_core.res.tile1.nc fv_core.res.tile1.nc
+      cp_vrfy ${bkpath}/fv_srf_wnd.res.tile1.nc fv_srf_wnd.res.tile1.nc
+      cp_vrfy ${bkpath}/fv_tracer.res.tile1.nc fv_tracer.res.tile1.nc
+      cp_vrfy ${bkpath}/phy_data.nc phy_data.nc
+      cp_vrfy ${bkpath}/sfc_data.nc sfc_data.nc
+      cp_vrfy ${bkpath}/gfs_ctrl.nc gfs_ctrl.nc
+
+      ln_vrfy -s ${bkpath}/coupler.res bk_coupler.res
+      ln_vrfy -s ${bkpath}/fv_core.res.nc bk_fv_core.res.nc
+      ln_vrfy -s ${bkpath}/fv_core.res.tile1.nc bk_fv_core.res.tile1.nc
+      ln_vrfy -s ${bkpath}/fv_srf_wnd.res.tile1.nc bk_fv_srf_wnd.res.tile1.nc
+      ln_vrfy -s ${bkpath}/fv_tracer.res.tile1.nc bk_fv_tracer.res.tile1.nc
+      ln_vrfy -s ${bkpath}/phy_data.nc bk_phy_data.nc
+      ln_vrfy -s ${bkpath}/sfc_data.nc bk_sfc_data.nc
+
+      if [ ${SAVE_CYCLE_LOG} == "TRUE" ] ; then
+        echo "${YYYYMMDDHH}(${cycle_type}): blended warm start at ${current_time} from $bkpath " >> ${EXPTDIR}/log.cycles
+      fi
+    else
+      print_err_msg_exit "Error: cannot find blended warm start initial condition from : ${bkpath}"
+    fi
+# generate coupler.res with right date
+    head -1 bk_coupler.res > coupler.res
+    tail -1 bk_coupler.res >> coupler.res
+    tail -1 bk_coupler.res >> coupler.res
+
+#
+# remove checksum from restart files. Checksum will cause trouble if model initializes from blended ics
+#
+    filelistn="fv_core.res.nc fv_core.res.tile1.nc fv_srf_wnd.res.tile1.nc fv_tracer.res.tile1.nc phy_data.nc sfc_data.nc"
+
+    for file in ${filelistn}; do
+      ncatted -a checksum,,d,, ${file}
+    done
+    ncatted -O -a source,global,c,c,'FV3GFS GAUSSIAN NETCDF FILE' fv_core.res.tile1.nc
 else
 
 # Setup the INPUT directory for warm start cycles, which can be spin-up cycle or product cycle.
