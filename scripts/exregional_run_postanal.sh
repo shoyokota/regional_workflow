@@ -199,19 +199,38 @@ else
 fi
 
 if [[ ${BKTYPE} -eq 0 ]] && [[ "${DO_PM_DA}" = "TRUE" ]]; then  # warm start
-  analworkdir_aero="${cycle_dir}/anal_AERO_${analworkname}"
+  analworkdir_aero="${cycle_dir}/anal_AERO${analworkname}"
 # Assume the GSI analysis files are in current dir
   if [ "${IO_LAYOUT_Y}" == "1" ]; then
-    ln_vrfy  -snf ${analworkdir_aero}/fv3_tracer  fv3_tracer_sdp
-    ncrename -v smoke,smoke_ori -v dust,dust_ori  fv3_tracer
-    ncks -A  -v smoke,dust        fv3_tracer_sdp  fv3_tracer
+    anal_aero="${analworkdir_aero}/fv3_tracer"
+    if [ -f ${anal_aero} ]; then
+      print_info_msg "$VERBOSE" "
+      Link anal_aero to the run directory..."
+      #ncks -A  -v smoke,dust        fv3_tracer bg_smoke_dust
+      ln_vrfy  -snf ${anal_aero}   fv3_tracer_sdp
+      ncks -A  -v smoke,dust        fv3_tracer_sdp  fv3_tracer
+    else
+# Please change it to warning if don't want to stop workflow
+      print_err_msg_exit "\
+The anal_aero specified in ${analworkdir_aero} does not exist.
+Doesn't update smoke/dust with anal_aero"
+     exit 1
+    fi
   else
     for ii in ${list_iolayout}
     do
       iii=`printf %4.4i $ii`
-      ln_vrfy  -snf ${analworkdir_aero}/fv3_tracer.${iii} fv3_tracer_sdp.${iii}
-      ncrename -v smoke,smoke_ori -v dust,dust_ori  fv3_tracer.${iii}
-      ncks -A  -v smoke,dust fv3_tracer_sdp.${iii}  fv3_tracer.${iii}
+      anal_aero="${analworkdir_aero}/fv3_tracer.${iii}"
+      if [ -f ${anal_aero} ]; then
+        print_info_msg "$VERBOSE" "
+        Link anal_aero to the run directory..."
+        ln_vrfy  -snf ${anal_aero}   fv3_tracer_sdp
+        ncks -A  -v smoke,dust fv3_tracer_sdp.${iii}  fv3_tracer.${iii}
+      else
+    print_err_msg_exit "\
+The anal_aero specified in ${analworkdir_aero} does not exist.
+Doesn't update smoke/dust with anal_aero"
+      fi
     done
   fi
 fi

@@ -29,7 +29,7 @@ gsi_namelist="
  &BKGERR
    vs=${bkgerr_vs},
    hzscl=${bkgerr_hzscl},
-   bw=0.,fstat=.true.,
+   bw=0.,fstat=${bkgerr_fstat},
    usenewgfsberror=${usenewgfsberror},
 /
  &ANBKGERR

@@ -1362,7 +1362,7 @@ MODULES_RUN_TASK_FP script.
     <dependency>
        <and>
          <timedep><cyclestr offset="&START_TIME_CONVENTIONAL;">@Y@m@d@H@M00</cyclestr></timedep>
-          <taskdep task="&PREP_CYC_TN;_prod{{ uscore_ensmem_name }}"/>
+          <taskdep task="&PREP_CYC_TN;_spinup{{ uscore_ensmem_name }}"/>
        </and>
     </dependency>
 
@@ -1477,9 +1477,13 @@ MODULES_RUN_TASK_FP script.
     {%- endif %}
 
     <dependency>
-       <taskdep task="&ANAL_GSI_TN;_spinup{{ uscore_ensmem_name }}"/>
        {%- if do_pm_da %}
-         <taskdep task="&ANAL_SD_GSI_TN;_spinup{{ uscore_ensmem_name }}"/>
+        <and>
+        <taskdep task="&ANAL_GSI_TN;_spinup{{ uscore_ensmem_name }}"/>
+        <taskdep task="&ANAL_SD_GSI_TN;_spinup{{ uscore_ensmem_name }}"/>
+        </and>
+       {%- else %}
+         <taskdep task="&ANAL_GSI_TN;_spinup{{ uscore_ensmem_name }}"/>
        {%- endif %}
     </dependency>
 
@@ -2410,9 +2414,13 @@ MODULES_RUN_TASK_FP script.
     {%- endif %}
 
     <dependency>
-       <taskdep task="&ANAL_GSI_TN;_prod{{ uscore_ensmem_name }}"/>
        {%- if do_pm_da %}
-         <taskdep task="&ANAL_SD_GSI_TN;_prod{{ uscore_ensmem_name }}"/>
+        <and>
+        <taskdep task="&ANAL_GSI_TN;_prod{{ uscore_ensmem_name }}"/>
+        <taskdep task="&ANAL_SD_GSI_TN;_prod{{ uscore_ensmem_name }}"/>
+        </and>
+       {%- else %}
+         <taskdep task="&ANAL_GSI_TN;_prod{{ uscore_ensmem_name }}"/>
        {%- endif %}
     </dependency>
 

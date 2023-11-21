@@ -705,7 +705,7 @@ HYBENSINFO=${FIX_GSI}/${HYBENSINFO_FN}
 OBERROR=${FIX_GSI}/${OBERROR_FN}
 BERROR=${FIX_GSI}/${BERROR_FN}
 
-
+bkgerr_fstat=.true.
 if [[ ${gsi_type} == "ANALYSIS" && ${anav_type} == "AERO" ]]; then
   if [ ${BKTYPE} -eq 1 ]; then
     echo "cold start, skip GSI SD DA"
@@ -732,6 +732,8 @@ if [[ ${gsi_type} == "ANALYSIS" && ${anav_type} == "AERO" ]]; then
 #remove cmaq when GSL GSI is update in future
   berror_fv3_cmaq_regional=.true.
   berror_fv3_sd_regional=.true.
+  bkgerr_hzscl="0.4,0.5,0.6"
+  bkgerr_fstat=.false.
 fi
 
 SATINFO=${FIX_GSI}/global_satinfo.txt
@@ -1007,11 +1009,6 @@ EOF
 #-----------------------------------------------------------------------
 #
 gsi_exec="${EXECDIR}/gsi.x"
-
-if [[ ${gsi_type} == "ANALYSIS" && ${anav_type} == "AERO" ]]; then
-  gsi_exec="${EXECDIR}/gsi.x.sd"
-fi
-
 
 if [ -f $gsi_exec ]; then
   print_info_msg "$VERBOSE" "
