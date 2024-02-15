@@ -11,12 +11,12 @@ gsi_namelist="
    lread_obs_save=${lread_obs_save},lread_obs_skip=${lread_obs_skip},
    ${ens_nstarthr:+"ens_nstarthr=$ens_nstarthr,"}
    oneobtest=.false.,retrieval=.false.,
-   nhr_assimilation=3,l_foto=.false.,
+   nhr_assimilation=${nhr_assimilation},min_offset=60,l_foto=.false.,
    use_pbl=.false.,use_prepb_satwnd=$ifsatbufr,
    newpc4pred=.true.,adp_anglebc=.true.,angord=4,
    passive_bc=.true.,use_edges=.false.,emiss_bc=.true.,
    diag_precon=.true.,step_start=1.e-3,
-   l4densvar=.false.,nhr_obsbin=3,
+   l4densvar=${l4densvar},nhr_obsbin=1,
    use_gfs_nemsio=.false.,use_gfs_ncio=.true.,reset_bad_radbc=.true.,
    netcdf_diag=${netcdf_diag},binary_diag=${binary_diag},
    l_obsprvdiag=${l_obsprvdiag},
@@ -160,6 +160,7 @@ OBS_INPUT::
    ens_fast_read=${ens_fast_read},
    nsclgrp=${nsclgrp},l_timloc_opt=.false.,ngvarloc=${ngvarloc},naensloc=${naensloc},
    r_ensloccov4tim=${r_ensloccov4tim},r_ensloccov4var=${r_ensloccov4var},r_ensloccov4scl=${r_ensloccov4scl},
+   l_etlm=${l_etlm},infl_etlm=${infl_etlm},infl_etlm_dbz=${infl_etlm_dbz},
  /
  &RAPIDREFRESH_CLDSURF
    dfi_radar_latent_heat_time_period=20.0,

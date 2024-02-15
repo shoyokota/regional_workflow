@@ -617,6 +617,10 @@ netcdf_diag=.false.
 binary_diag=.true.
 
 # &HYBRID_ENSEMBLE
+l4densvar=.false.
+l_etlm=.false.
+infl_etlm=1.0
+infl_etlm_dbz=1.0
 l_both_fv3sar_gfs_ens=.false.
 weight_ens_gfs=1.0
 weight_ens_fv3sar=1.0

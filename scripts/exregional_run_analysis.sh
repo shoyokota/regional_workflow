@@ -264,7 +264,7 @@ if  [[ ${regional_ensemble_option:-1} -eq 1 || ${l_both_fv3sar_gfs_ens} = ".true
   loops="009"    # or 009s for GFSv15
   ftype="nc"  # or nemsio for GFSv15
   foundgdasens="false"
-  cat "no ens found" >> filelist03
+  cat "no ens found" >> filelist01
 
   case $MACHINE in
 
@@ -297,7 +297,7 @@ if  [[ ${regional_ensemble_option:-1} -eq 1 || ${l_both_fv3sar_gfs_ens} = ".true
 
     if [ ${foundgdasens} = "true" ]
     then
-      ls ${ENKF_FCST}/enkfgdas.${eyyyymmdd}/${ehh}/atmos/mem???/${enkfcstname}.nc > filelist03
+      ls ${ENKF_FCST}/enkfgdas.${eyyyymmdd}/${ehh}/atmos/mem???/${enkfcstname}.nc > filelist01
     fi
 
     ;;
@@ -331,7 +331,7 @@ if  [[ ${regional_ensemble_option:-1} -eq 1 || ${l_both_fv3sar_gfs_ens} = ".true
     done
 
     if [ $foundgdasens = "true" ]; then
-      ls ${ENKF_FCST}/${enkfcstname}.mem0??.${ftype} >> filelist03
+      ls ${ENKF_FCST}/${enkfcstname}.mem0??.${ftype} >> filelist01
     fi
 
   esac
@@ -360,8 +360,18 @@ nummem_fv3sar=0
 memname='atmf009'
 
 if [ ${regional_ensemble_option:-1} -eq 5 ]  && [ ${BKTYPE} != 1  ]; then 
+  if [[ ! -f ${rrfse_fg_root}/${YYYYMMDDHHmInterv}/mem0001/fcst_fv3lam/INPUT/coupler.res ]]; then
+    beta1_inv=1.0
+    l4densvar=.false.
+    l_etlm=.false.
+    infl_etlm=1.0
+    infl_etlm_dbz=1.0
+    if [[ ${ob_type} == "all" ]]; then
+      ob_type="conv"
+    fi
+  fi
   if [ ${l_both_fv3sar_gfs_ens} = ".true." ]; then
-    nummem_gfs=$(more filelist03 | wc -l)
+    nummem_gfs=$(more filelist01 | wc -l)
     nummem_gfs=$((nummem_gfs - 3 ))
   else
     weight_ens_gfs=1.0
@@ -375,9 +385,14 @@ if [ ${regional_ensemble_option:-1} -eq 5 ]  && [ ${BKTYPE} != 1  ]; then
   grid_ratio_ens="1"
   ens_fast_read=.true.
 else    
+  beta1_inv=1.0
+  l4densvar=.false.
+  l_etlm=.false.
+  infl_etlm=1.0
+  infl_etlm_dbz=1.0
   weight_ens_gfs=1.0
   weight_ens_fv3sar=1.0
-  nummem_gfs=$(more filelist03 | wc -l)
+  nummem_gfs=$(more filelist01 | wc -l)
   nummem_gfs=$((nummem_gfs - 3 ))
   nummem=${nummem_gfs}
   if [[ ${nummem} -ge ${HYBENSMEM_NMIN} ]]; then
@@ -391,6 +406,28 @@ else
   if [[ ${ob_type} == "all" ]]; then
     ob_type="conv"
   fi
+fi
+
+nhr_assimilation=1
+if [[ ${l4densvar} = ".true." ]]; then
+  nhr_assimilation=2
+  imem=1
+  while [[ $imem -le ${NUM_ENS_MEMBERS} ]];do
+    memcharv0=$( printf "%03d" $imem )
+    mv           fv3SAR01_ens_mem${memcharv0}-fv3_dynvars    fv3SAR02_ens_mem${memcharv0}-fv3_dynvars
+    mv           fv3SAR01_ens_mem${memcharv0}-fv3_tracer     fv3SAR02_ens_mem${memcharv0}-fv3_tracer
+    mv           fv3SAR01_ens_mem${memcharv0}-fv3_phyvars    fv3SAR02_ens_mem${memcharv0}-fv3_phyvars
+    memchar=mem$( printf "%04d" $imem )
+    slash_ensmem_subdir=$memchar
+    bkpathmem=${rrfse_fg_root}/${YYYYMMDDHHmInterv}/${slash_ensmem_subdir}/fcst_fv3lam/INPUT
+    ln_vrfy -snf ${bkpathmem}/fv_core.res.tile1.nc       fv3SAR01_ens_mem${memcharv0}-fv3_dynvars
+    ln_vrfy -snf ${bkpathmem}/fv_tracer.res.tile1.nc     fv3SAR01_ens_mem${memcharv0}-fv3_tracer
+    ln_vrfy -snf ${bkpathmem}/phy_data.nc                fv3SAR01_ens_mem${memcharv0}-fv3_phyvars
+    ln_vrfy -snf fv3SAR02_ens_mem${memcharv0}-fv3_dynvars    fv3SAR03_ens_mem${memcharv0}-fv3_dynvars
+    ln_vrfy -snf fv3SAR02_ens_mem${memcharv0}-fv3_tracer     fv3SAR03_ens_mem${memcharv0}-fv3_tracer
+    ln_vrfy -snf fv3SAR02_ens_mem${memcharv0}-fv3_phyvars    fv3SAR03_ens_mem${memcharv0}-fv3_phyvars
+    (( imem += 1 ))
+  done
 fi
 
 #
@@ -672,6 +709,9 @@ if [[ ${gsi_type} == "ANALYSIS" && ${ob_type} == "all" ]]; then
   if_model_dbz=.true.
 fi
 naensloc=`expr ${nsclgrp} \* ${ngvarloc} + ${nsclgrp} - 1`
+if [ ${l_etlm} = ".true." ]; then
+  naensloc=`expr ${naensloc} + 2`
+fi
 CONVINFO=${FIX_GSI}/${CONVINFO_FN}
 HYBENSINFO=${FIX_GSI}/${HYBENSINFO_FN}
 OBERROR=${FIX_GSI}/${OBERROR_FN}
