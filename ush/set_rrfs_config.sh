@@ -7,6 +7,7 @@ SST_ROOT="/lfs4/BMC/public/data/grids/ncep/sst/0p083deg/grib2"
 GVF_ROOT="/public/data/sat/ncep/viirs/gvf/grib2"
 
 BERROR_FN="rrfs_glb_berror.l127y194.f77"
+BERROR_CS_FN="rrfs_convective_berror"
 
 if [[ $MACHINE == "hera" ]] ; then
 

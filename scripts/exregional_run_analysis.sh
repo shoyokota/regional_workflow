@@ -264,7 +264,7 @@ if  [[ ${regional_ensemble_option:-1} -eq 1 || ${l_both_fv3sar_gfs_ens} = ".true
   loops="009"    # or 009s for GFSv15
   ftype="nc"  # or nemsio for GFSv15
   foundgdasens="false"
-  cat "no ens found" >> filelist03
+  cat "no ens found" >> filelist01
 
   case $MACHINE in
 
@@ -297,7 +297,7 @@ if  [[ ${regional_ensemble_option:-1} -eq 1 || ${l_both_fv3sar_gfs_ens} = ".true
 
     if [ ${foundgdasens} = "true" ]
     then
-      ls ${ENKF_FCST}/enkfgdas.${eyyyymmdd}/${ehh}/atmos/mem???/${enkfcstname}.nc > filelist03
+      ls ${ENKF_FCST}/enkfgdas.${eyyyymmdd}/${ehh}/atmos/mem???/${enkfcstname}.nc > filelist01
     fi
 
     ;;
@@ -331,7 +331,7 @@ if  [[ ${regional_ensemble_option:-1} -eq 1 || ${l_both_fv3sar_gfs_ens} = ".true
     done
 
     if [ $foundgdasens = "true" ]; then
-      ls ${ENKF_FCST}/${enkfcstname}.mem0??.${ftype} >> filelist03
+      ls ${ENKF_FCST}/${enkfcstname}.mem0??.${ftype} >> filelist01
     fi
 
   esac
@@ -360,8 +360,16 @@ nummem_fv3sar=0
 memname='atmf009'
 
 if [ ${regional_ensemble_option:-1} -eq 5 ]  && [ ${BKTYPE} != 1  ]; then 
+  if [[ ! -f ${rrfse_fg_root}/${YYYYMMDDHHmInterv}/mem0001/fcst_fv3lam/INPUT/coupler.res ]]; then
+    beta1_inv=1.0
+    l4densvar=.false.
+    if_cs_staticB=.false.
+    if [[ ${ob_type} == "all" ]]; then
+      ob_type="conv"
+    fi
+  fi
   if [ ${l_both_fv3sar_gfs_ens} = ".true." ]; then
-    nummem_gfs=$(more filelist03 | wc -l)
+    nummem_gfs=$(more filelist01 | wc -l)
     nummem_gfs=$((nummem_gfs - 3 ))
   else
     weight_ens_gfs=1.0
@@ -375,9 +383,12 @@ if [ ${regional_ensemble_option:-1} -eq 5 ]  && [ ${BKTYPE} != 1  ]; then
   grid_ratio_ens="1"
   ens_fast_read=.true.
 else    
+  beta1_inv=1.0
+  l4densvar=.false.
+  if_cs_staticB=.false.
   weight_ens_gfs=1.0
   weight_ens_fv3sar=1.0
-  nummem_gfs=$(more filelist03 | wc -l)
+  nummem_gfs=$(more filelist01 | wc -l)
   nummem_gfs=$((nummem_gfs - 3 ))
   nummem=${nummem_gfs}
   if [[ ${nummem} -ge ${HYBENSMEM_NMIN} ]]; then
@@ -391,6 +402,28 @@ else
   if [[ ${ob_type} == "all" ]]; then
     ob_type="conv"
   fi
+fi
+
+nhr_assimilation=1
+if [[ ${l4densvar} = ".true." ]]; then
+  nhr_assimilation=2
+  imem=1
+  while [[ $imem -le ${NUM_ENS_MEMBERS} ]];do
+    memcharv0=$( printf "%03d" $imem )
+    mv           fv3SAR01_ens_mem${memcharv0}-fv3_dynvars    fv3SAR02_ens_mem${memcharv0}-fv3_dynvars
+    mv           fv3SAR01_ens_mem${memcharv0}-fv3_tracer     fv3SAR02_ens_mem${memcharv0}-fv3_tracer
+    mv           fv3SAR01_ens_mem${memcharv0}-fv3_phyvars    fv3SAR02_ens_mem${memcharv0}-fv3_phyvars
+    memchar=mem$( printf "%04d" $imem )
+    slash_ensmem_subdir=$memchar
+    bkpathmem=${rrfse_fg_root}/${YYYYMMDDHHmInterv}/${slash_ensmem_subdir}/fcst_fv3lam/INPUT
+    ln_vrfy -snf ${bkpathmem}/fv_core.res.tile1.nc       fv3SAR01_ens_mem${memcharv0}-fv3_dynvars
+    ln_vrfy -snf ${bkpathmem}/fv_tracer.res.tile1.nc     fv3SAR01_ens_mem${memcharv0}-fv3_tracer
+    ln_vrfy -snf ${bkpathmem}/phy_data.nc                fv3SAR01_ens_mem${memcharv0}-fv3_phyvars
+    ln_vrfy -snf fv3SAR02_ens_mem${memcharv0}-fv3_dynvars    fv3SAR03_ens_mem${memcharv0}-fv3_dynvars
+    ln_vrfy -snf fv3SAR02_ens_mem${memcharv0}-fv3_tracer     fv3SAR03_ens_mem${memcharv0}-fv3_tracer
+    ln_vrfy -snf fv3SAR02_ens_mem${memcharv0}-fv3_phyvars    fv3SAR03_ens_mem${memcharv0}-fv3_phyvars
+    (( imem += 1 ))
+  done
 fi
 
 #
@@ -436,6 +469,9 @@ else                          # cycle uses background from restart
     ln_vrfy  -snf ${bkpath}/fv_tracer.res.tile1.nc           fv3_tracer
     ln_vrfy  -snf ${bkpath}/sfc_data.nc                      fv3_sfcdata
     ln_vrfy  -snf ${bkpath}/phy_data.nc                      fv3_phyvars
+    if [[ ${gsi_type} == "ANALYSIS" && ${ob_type} != "conv" && ${if_cs_staticB} = ".true." ]]; then
+      ln_vrfy  -snf ${bkpath}/fv_mask.res.tile1.nc             fv3_mask
+    fi
   else
     for ii in ${list_iolayout}
     do
@@ -648,22 +684,29 @@ if [ ${DO_ENKF_RADAR_REF} == "TRUE" ]; then
   beta1_inv=0.0
   if_model_dbz=.true.
 fi
-if [[ ${gsi_type} == "ANALYSIS" && ${ob_type} == "radardbz" ]]; then
+if [[ ${gsi_type} == "ANALYSIS" || ${gsi_type} == "MASK" ]] && [ ${ob_type} == "radardbz" ]; then
   ANAVINFO=${FIX_GSI}/${ENKF_ANAVINFO_DBZ_FN}
-  miter=1
-  niter1=100
-  niter2=0
+  if [ ${gsi_type} == "ANALYSIS" ]; then
+    miter=1
+    niter1=100
+    niter2=0
+    beta1_inv=${beta1_inv_radardbz}
+  elif [ ${gsi_type} == "MASK" ]; then
+    miter=1
+    niter1=1
+    niter2=0
+    beta1_inv=0.0
+  fi
   bkgerr_vs=0.1
   bkgerr_hzscl="0.4,0.5,0.6"
-  beta1_inv=0.0
   readin_localization=.false.
   ens_h=${ens_h_radardbz}
   ens_v=${ens_v_radardbz}
   nsclgrp=1
   ngvarloc=1
-  r_ensloccov4tim=0
-  r_ensloccov4var=0
-  r_ensloccov4scl=0
+  r_ensloccov4tim=1.0
+  r_ensloccov4var=1.0
+  r_ensloccov4scl=1.0
   q_hyb_ens=.true.
   if_model_dbz=.true.
 fi
@@ -676,6 +719,16 @@ CONVINFO=${FIX_GSI}/${CONVINFO_FN}
 HYBENSINFO=${FIX_GSI}/${HYBENSINFO_FN}
 OBERROR=${FIX_GSI}/${OBERROR_FN}
 BERROR=${FIX_GSI}/${BERROR_FN}
+if [[ ${gsi_type} == "ANALYSIS" && ${ob_type} != "conv" && ${if_cs_staticB} = ".true." ]]; then
+  ANAVINFO=${FIX_GSI}/${ANAVINFO_CS_FN}
+  BERROR=${FIX_GSI}/${BERROR_CS_FN}
+  bkgerr_vs=1.0
+  bkgerr_hzscl="0.9,1.0,1.1"
+  qoption=1
+else
+  if_cs_staticB=.false.
+  qoption=2
+fi
 
 SATINFO=${FIX_GSI}/global_satinfo.txt
 OZINFO=${FIX_GSI}/global_ozinfo.txt
@@ -861,7 +914,11 @@ else
   n_iolayouty=$(($IO_LAYOUT_Y_IN))
 fi
 
-. ${FIX_GSI}/gsiparm.anl.sh
+if [ ${gsi_type} == "MASK" ]; then
+  . ${FIX_GSI}/gsiparm.mask.sh
+else
+  . ${FIX_GSI}/gsiparm.anl.sh
+fi
 cat << EOF > gsiparm.anl
 $gsi_namelist
 EOF
@@ -874,6 +931,9 @@ EOF
 #-----------------------------------------------------------------------
 #
 gsi_exec="${EXECDIR}/gsi.x"
+if [[ ${gsi_type} == "MASK" && ${ob_type} == "radardbz" ]]; then
+  gsi_exec="${EXECDIR}/gsi.x.mask"
+fi
 
 if [ -f $gsi_exec ]; then
   print_info_msg "$VERBOSE" "
@@ -905,6 +965,18 @@ fi
 # comment out for testing
 $APRUN ./gsi.x < gsiparm.anl > stdout 2>&1 || print_err_msg_exit "\
 Call to executable to run GSI returned with nonzero exit code."
+
+if [[ ${gsi_type} == "MASK" && ${ob_type} == "radardbz" ]]; then
+  cp_vrfy ${bkpath}/fv_tracer.res.tile1.nc                    ${bkpath}/fv_mask.res.tile1.nc
+  cp_vrfy -f ${bkpath}/bk_${ob_type}_fv_core.res.tile1.nc     ${bkpath}/fv_core.res.tile1.nc
+  cp_vrfy -f ${bkpath}/bk_${ob_type}_fv_tracer.res.tile1.nc   ${bkpath}/fv_tracer.res.tile1.nc
+  cp_vrfy -f ${bkpath}/bk_${ob_type}_sfc_data.nc              ${bkpath}/sfc_data.nc
+  cp_vrfy -f ${bkpath}/bk_${ob_type}_phy_data.nc              ${bkpath}/phy_data.nc
+  rm_vrfy -f ${bkpath}/bk_${ob_type}_fv_core.res.tile1.nc
+  rm_vrfy -f ${bkpath}/bk_${ob_type}_fv_tracer.res.tile1.nc
+  rm_vrfy -f ${bkpath}/bk_${ob_type}_sfc_data.nc
+  rm_vrfy -f ${bkpath}/bk_${ob_type}_phy_data.nc
+fi
 #
 #-----------------------------------------------------------------------
 #
@@ -914,7 +986,7 @@ Call to executable to run GSI returned with nonzero exit code."
 #-----------------------------------------------------------------------
 #
 touch gsi_complete.txt
-if [[ ${ob_type} == "radardbz" || ${ob_type} == "all" ]]; then
+if [ ${gsi_type} == "ANALYSIS" ] && [[ ${ob_type} == "radardbz" || ${ob_type} == "all" ]]; then
   touch gsi_complete_radar.txt # for nonvarcldanl
 fi
 #

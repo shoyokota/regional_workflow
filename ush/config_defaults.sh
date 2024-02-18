@@ -617,11 +617,13 @@ netcdf_diag=.false.
 binary_diag=.true.
 
 # &HYBRID_ENSEMBLE
+l4densvar=.false.
 l_both_fv3sar_gfs_ens=.false.
 weight_ens_gfs=1.0
 weight_ens_fv3sar=1.0
 readin_localization=.true.     #if true, it overwrites the "beta1_inv/ens_h/ens_v" setting
 beta1_inv=0.15                 #beata_inv is 1-ensemble_wgt
+beta1_inv_radardbz=0.0
 ens_h=110                      #horizontal localization scale of "Gaussian function=exp(-0.5)" for EnVar (km)
 ens_v=3                        #vertical localization scale of "Gaussian function=exp(-0.5)" for EnVar (positive:grids, negative:lnp)
 ens_h_radardbz=110             #horizontal localization scale of "Gaussian function=exp(-0.5)" for radardbz EnVar (km)
@@ -655,10 +657,13 @@ HYBENSMEM_NMIN=80
 ANAVINFO_FN="anavinfo.rrfs"
 ANAVINFO_DBZ_FN="anavinfo.rrfs_dbz"
 ANAVINFO_ALL_FN="anavinfo.rrfs_all"
+ANAVINFO_CS_FN="anavinfo.rrfs_cs"
 ENKF_ANAVINFO_FN="anavinfo.rrfs"
 ENKF_ANAVINFO_DBZ_FN="anavinfo.enkf.rrfs_dbz"
 CONVINFO_FN="convinfo.rrfs"
 BERROR_FN="rap_berror_stats_global_RAP_tune" #under $FIX_GSI
+BERROR_CS_FN="rap_berror_stats_global_RAP_tune" #under $FIX_GSI
+if_cs_staticB=.false.
 OBERROR_FN="errtable.rrfs"
 HYBENSINFO_FN="hybens_info.rrfs"
 AIRCRAFT_REJECT=""
@@ -1583,6 +1588,7 @@ RUN_POST_TN="run_post"
 RUN_WGRIB2_TN="run_wgrib2"
 RUN_BUFRSND_TN="run_bufrsnd"
 
+MASK_GSI_TN="mask_gsi_input"
 ANAL_GSI_TN="anal_gsi_input"
 OBSERVER_GSI_ENSMEAN_TN="observer_gsi_ensmean"
 OBSERVER_GSI_TN="observer_gsi"

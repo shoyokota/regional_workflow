@@ -191,6 +191,17 @@ mkdir_vrfy -p ${enkfanal_nwges_dir}
         observer_nwges_dir="${NWGES_DIR}/${slash_ensmem_subdir}/observer_gsi"
      fi
 
+     if [ -r "${bkpath}/bk_${ob_type}_fv_core.res.tile1.nc" ]; then
+         cp_vrfy -f ${bkpath}/bk_${ob_type}_fv_core.res.tile1.nc     ${bkpath}/fv_core.res.tile1.nc
+         cp_vrfy -f ${bkpath}/bk_${ob_type}_fv_tracer.res.tile1.nc   ${bkpath}/fv_tracer.res.tile1.nc
+         cp_vrfy -f ${bkpath}/bk_${ob_type}_sfc_data.nc              ${bkpath}/sfc_data.nc
+         cp_vrfy -f ${bkpath}/bk_${ob_type}_phy_data.nc              ${bkpath}/phy_data.nc
+     else
+         cp_vrfy ${bkpath}/fv_core.res.tile1.nc     ${bkpath}/bk_${ob_type}_fv_core.res.tile1.nc
+         cp_vrfy ${bkpath}/fv_tracer.res.tile1.nc   ${bkpath}/bk_${ob_type}_fv_tracer.res.tile1.nc
+         cp_vrfy ${bkpath}/sfc_data.nc              ${bkpath}/bk_${ob_type}_sfc_data.nc
+         cp_vrfy ${bkpath}/phy_data.nc              ${bkpath}/bk_${ob_type}_phy_data.nc
+     fi
      ln_vrfy  -snf  ${bkpath}/fv_core.res.tile1.nc         fv3sar_tile1_${memcharv0}_dynvars
      ln_vrfy  -snf  ${bkpath}/fv_tracer.res.tile1.nc       fv3sar_tile1_${memcharv0}_tracer
      ln_vrfy  -snf  ${bkpath}/sfc_data.nc                  fv3sar_tile1_${memcharv0}_sfcdata

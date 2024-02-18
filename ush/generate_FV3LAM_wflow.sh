@@ -205,6 +205,7 @@ settings="\
   'run_fcst_tn': ${RUN_FCST_TN}
   'run_post_tn': ${RUN_POST_TN}
   'run_wgrib2_tn': ${RUN_WGRIB2_TN}
+  'mask_gsi': ${MASK_GSI_TN}
   'anal_gsi': ${ANAL_GSI_TN}
   'observer_gsi_ensmean': ${OBSERVER_GSI_ENSMEAN_TN}
   'observer_gsi': ${OBSERVER_GSI_TN}
@@ -458,6 +459,7 @@ settings="\
   'radar_ref_thinning': ${RADAR_REF_THINNING}
   'ensctrl_stmp': ${ENSCTRL_STMP}
   'use_rrfse_ens': ${USE_RRFSE_ENS}
+  'if_cs_staticB': ${if_cs_staticB}
 #
 # graphics related parameters
 #
