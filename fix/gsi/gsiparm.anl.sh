@@ -160,6 +160,7 @@ OBS_INPUT::
    ens_fast_read=${ens_fast_read},
    nsclgrp=${nsclgrp},l_timloc_opt=.false.,ngvarloc=${ngvarloc},naensloc=${naensloc},
    r_ensloccov4tim=${r_ensloccov4tim},r_ensloccov4var=${r_ensloccov4var},r_ensloccov4scl=${r_ensloccov4scl},
+   l_mgbf_loc=${l_mgbf_loc},
  /
  &RAPIDREFRESH_CLDSURF
    dfi_radar_latent_heat_time_period=20.0,

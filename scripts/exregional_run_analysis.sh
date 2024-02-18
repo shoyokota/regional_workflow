@@ -391,6 +391,11 @@ else
   if [[ ${ob_type} == "all" ]]; then
     ob_type="conv"
   fi
+  l_mgbf_loc=.false.
+  ens_h="82.1580"
+  ens_v="3"
+  nsclgrp=1
+  ngvarloc=1
 fi
 
 #
@@ -411,6 +416,13 @@ ln_vrfy -snf ${fixgriddir}/fv3_akbk                     fv3_akbk
 ln_vrfy -snf ${fixgriddir}/fv3_grid_spec                fv3_grid_spec
 
 if [ ${BKTYPE} -eq 1 ]; then  # cold start uses background from INPUT
+  if [ -r "${bkpath}/bk_${ob_type}_gfs_data.tile7.halo0.nc" ]; then
+    cp_vrfy -f ${bkpath}/bk_${ob_type}_sfc_data.tile7.halo0.nc   ${bkpath}/sfc_data.tile7.halo0.nc
+    cp_vrfy -f ${bkpath}/bk_${ob_type}_gfs_data.tile7.halo0.nc   ${bkpath}/gfs_data.tile7.halo0.nc
+  else
+    cp_vrfy ${bkpath}/sfc_data.tile7.halo0.nc  ${bkpath}/bk_${ob_type}_sfc_data.tile7.halo0.nc
+    cp_vrfy ${bkpath}/gfs_data.tile7.halo0.nc  ${bkpath}/bk_${ob_type}_gfs_data.tile7.halo0.nc
+  fi
   ln_vrfy -snf ${fixgriddir}/phis.nc               phis.nc
   ncks -A -v  phis               phis.nc           ${bkpath}/gfs_data.tile7.halo0.nc 
 
@@ -666,6 +678,7 @@ if [[ ${gsi_type} == "ANALYSIS" && ${ob_type} == "radardbz" ]]; then
   r_ensloccov4scl=0
   q_hyb_ens=.true.
   if_model_dbz=.true.
+  l_mgbf_loc=.false.
 fi
 if [[ ${gsi_type} == "ANALYSIS" && ${ob_type} == "all" ]]; then
   ANAVINFO=${FIX_GSI}/${ANAVINFO_ALL_FN}
@@ -854,11 +867,19 @@ if [ ${gsi_type} == "OBSERVER" ]; then
     lread_obs_skip=.true.
     ln -s ../../ensmean/observer_gsi/obs_input.* .
   fi
+  l_mgbf_loc=.false.
 fi
 if [ ${BKTYPE} -eq 1 ]; then
   n_iolayouty=1
 else
   n_iolayouty=$(($IO_LAYOUT_Y_IN))
+fi
+
+if [ ${l_mgbf_loc} = ".true." ]; then
+  cp_vrfy ${FIX_GSI}/mgbf_loc_${ob_type}/mgbf_loc*.nml .
+fi
+if [ ${BKTYPE} -eq 0 ] && [ ${gsi_type} == "ANALYSIS" ] && [ ${ob_type} == "conv" -o ${ob_type} == "all" ]; then 
+  grid_ratio_fv3=2.002
 fi
 
 . ${FIX_GSI}/gsiparm.anl.sh
@@ -903,7 +924,7 @@ fi
 #-----------------------------------------------------------------------
 #
 # comment out for testing
-$APRUN ./gsi.x < gsiparm.anl > stdout 2>&1 || print_err_msg_exit "\
+$APRUN -n 735 ./gsi.x < gsiparm.anl > stdout 2>&1 || print_err_msg_exit "\
 Call to executable to run GSI returned with nonzero exit code."
 #
 #-----------------------------------------------------------------------

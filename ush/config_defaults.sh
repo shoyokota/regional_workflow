@@ -631,6 +631,7 @@ ngvarloc=1
 r_ensloccov4tim=1.0
 r_ensloccov4var=1.0
 r_ensloccov4scl=1.0
+l_mgbf_loc=.false.             #if true, multi-grid beta filter is used for localization instead of recursive filter
 regional_ensemble_option=1     #1 for GDAS ; 5 for FV3LAM ensemble
 grid_ratio_fv3=2.0             #fv3 resolution 3km, so analysis=3*2=6km
 grid_ratio_ens=3               #if analysis is 3km, then ensemble=3*3=9km. GDAS ensemble is 20km
